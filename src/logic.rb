@@ -40,8 +40,8 @@ end
     rotation: 0
   ),
   FECS::Cmp::Movement.new(
-    deceleration: 200,
-    acceleration: 500,
+    deceleration: 1000,
+    acceleration: 1000,
     max_speed: 300,
   ),
   FECS::Cmp::Hitbox.new(
@@ -91,40 +91,35 @@ FECS::Scn::Play.add(
     unless input_mag.zero?
       input_x /= input_mag
       input_y /= input_mag
-    end
 
-    # Add normalized speed
-    velocity_cmp.x += input_x * movement_cmp.acceleration * Rl.frame_time
+      # Add normalized speed
+      velocity_cmp.x += input_x * movement_cmp.acceleration * Rl.frame_time
+      velocity_cmp.y += input_y * movement_cmp.acceleration * Rl.frame_time
 
-    velocity_cmp.y += input_y * movement_cmp.acceleration * Rl.frame_time
-
-    # Get magnitude
-    velocity_mag = Math.sqrt((velocity_cmp.x**2) + (velocity_cmp.y**2))
-
-    # If going slower then deceleration
-    if velocity_mag <= (movement_cmp.deceleration * Rl.frame_time)
-      # Set to 0
-      velocity_cmp.x = 0
-      velocity_cmp.y = 0
-    else
-      # Normalize Velocity
+      # Get magnitude
+      velocity_mag = Math.sqrt((velocity_cmp.x**2) + (velocity_cmp.y**2))
       velocity_x_mag = velocity_cmp.x / velocity_mag
       velocity_y_mag = velocity_cmp.y / velocity_mag
 
-      # Add deceleration
-      velocity_cmp.x -= velocity_x_mag * movement_cmp.deceleration * Rl.frame_time
-
-      velocity_cmp.y -= velocity_y_mag * movement_cmp.deceleration * Rl.frame_time
-
-
+      if velocity_mag > movement_cmp.max_speed
+        velocity_cmp.x = velocity_x_mag * movement_cmp.max_speed
+        velocity_cmp.y = velocity_y_mag * movement_cmp.max_speed
+      end
+    else
       velocity_mag = Math.sqrt((velocity_cmp.x**2) + (velocity_cmp.y**2))
 
-      if velocity_mag > movement_cmp.max_speed
+      # If going slower then deceleration
+      if velocity_mag <= (movement_cmp.deceleration * Rl.frame_time)
+        # Set to 0
+        velocity_cmp.x = 0
+        velocity_cmp.y = 0
+      else
         velocity_x_mag = velocity_cmp.x / velocity_mag
         velocity_y_mag = velocity_cmp.y / velocity_mag
 
-        velocity_cmp.x = velocity_x_mag * movement_cmp.max_speed
-        velocity_cmp.y = velocity_y_mag * movement_cmp.max_speed
+        # Add deceleration
+        velocity_cmp.x -= velocity_x_mag * movement_cmp.deceleration * Rl.frame_time
+        velocity_cmp.y -= velocity_y_mag * movement_cmp.deceleration * Rl.frame_time
       end
     end
   end,
