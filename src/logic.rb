@@ -40,8 +40,8 @@ end
     rotation: 0
   ),
   FECS::Cmp::Movement.new(
-    deceleration: 2.25,
-    acceleration: 3,
+    deceleration: 200,
+    acceleration: 500,
     max_speed: 300,
   ),
   FECS::Cmp::Hitbox.new(
@@ -94,14 +94,15 @@ FECS::Scn::Play.add(
     end
 
     # Add normalized speed
-    velocity_cmp.x += input_x * movement_cmp.acceleration
-    velocity_cmp.y += input_y * movement_cmp.acceleration
+    velocity_cmp.x += input_x * movement_cmp.acceleration * Rl.frame_time
+
+    velocity_cmp.y += input_y * movement_cmp.acceleration * Rl.frame_time
 
     # Get magnitude
     velocity_mag = Math.sqrt((velocity_cmp.x**2) + (velocity_cmp.y**2))
 
     # If going slower then deceleration
-    if velocity_mag < movement_cmp.deceleration
+    if velocity_mag <= (movement_cmp.deceleration * Rl.frame_time)
       # Set to 0
       velocity_cmp.x = 0
       velocity_cmp.y = 0
@@ -111,8 +112,10 @@ FECS::Scn::Play.add(
       velocity_y_mag = velocity_cmp.y / velocity_mag
 
       # Add deceleration
-      velocity_cmp.x -= velocity_x_mag * movement_cmp.deceleration
-      velocity_cmp.y -= velocity_y_mag * movement_cmp.deceleration
+      velocity_cmp.x -= velocity_x_mag * movement_cmp.deceleration * Rl.frame_time
+
+      velocity_cmp.y -= velocity_y_mag * movement_cmp.deceleration * Rl.frame_time
+
 
       velocity_mag = Math.sqrt((velocity_cmp.x**2) + (velocity_cmp.y**2))
 
