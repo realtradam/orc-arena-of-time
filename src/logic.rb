@@ -23,9 +23,17 @@ FECS::Cmp.new('Hp', value: 0)
 
 lancelot = Tileset.new(texture: Rl::Texture.new('./assets/lancelot_.png'))
 
+puts 'about to make rectangles'
 8.times do |x|
   lancelot.frames.push Rl::Rectangle.new((24 * x), 0, 24, 24)
 end
+puts 'finished making rectangles'
+
+FECS::Cmp::Hitbox.new(
+  rec: Rl::Rectangle.new(100,100,250,250),
+  offset_x: 4*2,
+  offset_y: 4*2
+)
 
 
 @player = FECS::Ent.new(
@@ -34,7 +42,7 @@ end
   FECS::Cmp::Velocity.new,
   FECS::Cmp::Tileset.new(
     tileset: lancelot,
-    dest_rec: Rl::Rectangle.new(0,0,48,48),
+    dest_rec: Rl::Rectangle.new(0,0,24*2,24*2),
     origin: Rl::Vector2.new(0,0),
     tint: Rl::Color.new(255,255,255,255),
     rotation: 0
@@ -45,9 +53,9 @@ end
     max_speed: 300,
   ),
   FECS::Cmp::Hitbox.new(
-    rec: Rl::Rectangle.new(0,0,16,20),
-    offset_x: 4,
-    offset_y: 4
+    rec: Rl::Rectangle.new(0,0,16*2,20*2),
+    offset_x: 4*2,
+    offset_y: 4*2
   ),
 )
 
@@ -63,28 +71,16 @@ FECS::Scn::Play.add(
     input_y = 0
     movement_cmp = ent.component[FECS::Cmp::Movement]
     if Rl.key_down? 87 # UP W
-      #velocity_cmp.y += movement_cmp.acceleration
-      input_y += 1.0
-      #velocity_cmp.y = [velocity_cmp.y,
-      #                  (movement_cmp.max_speed + movement_cmp.deceleration)].min
+      input_y -= 1.0
     end
     if Rl.key_down? 83 # DOWN S
-      #velocity_cmp.y -= movement_cmp.acceleration 
-      input_y -= 1.0
-      #velocity_cmp.y = [velocity_cmp.y,
-      #                  (-movement_cmp.max_speed - movement_cmp.deceleration)].max
+      input_y += 1.0
     end
     if Rl.key_down? 65 # LEFT A
-      #velocity_cmp.x += movement_cmp.acceleration 
-      input_x += 1.0
-      #velocity_cmp.x = [velocity_cmp.x,
-      #                  (movement_cmp.max_speed + movement_cmp.deceleration)].min
+      input_x -= 1.0
     end
     if Rl.key_down? 68 # RIGHT D
-      #velocity_cmp.x -= movement_cmp.acceleration 
-      input_x -= 1.0
-      #velocity_cmp.x = [velocity_cmp.x,
-      #                  (-movement_cmp.max_speed - movement_cmp.deceleration)].max
+      input_x += 1.0
     end
     # Normalize input
     input_mag = Math.sqrt((input_x**2) + (input_y**2))
@@ -125,10 +121,47 @@ FECS::Scn::Play.add(
   end,
   FECS::Sys.new('Walls') do
     player = FECS::Cmp::Player.first.entity
-    player_hitbox = player.component[FECS::Cmp::Hitbox]
+    player_hitbox = player.component[FECS::Cmp::Hitbox].rec
+    position_cmp = player.component[FECS::Cmp::Position]
+    velocity_cmp = player.component[FECS::Cmp::Velocity]
+    step = Rl::Rectangle.new(
+      position_cmp.x + (velocity_cmp.x * Rl.frame_time),
+      position_cmp.y + (velocity_cmp.y * Rl.frame_time),
+      player_hitbox.width,
+      player_hitbox.height
+    )
+
     FECS::Cmp::Hitbox.each do |hitbox|
-      next if player_hitbox.equal? hitbox
-      if player_hitbox.collide_with_rec? hitbox
+      next if step.equal? hitbox.rec
+      if step.collide_with_rec? hitbox.rec
+        puts 'about to do get a new rec'
+        intersection = step.collision_rec hitbox.rec
+        puts 'got it'
+        puts intersection
+        #left collision
+        if intersection.width < step.width
+          # Colliding right/left
+          # if x equal push right
+          if intersection.x.equals? step.x
+            position_cmp.x += intersection.width
+            # else push left
+          else
+            position_cmp.x -= intersection.width
+          end
+          velocity_cmp.x = 0
+        elsif intersection.height < step.height
+          # Colliding up/down
+          # if y equal push down
+          if intersection.y.equals? step.y
+            position_cmp.y += intersection.height
+            # else push up
+          else
+            position_cmp.y -= intersection.height
+          end
+          velocity_cmp.y = 0
+        else
+          # Tunneled into a hitbox
+        end
       end
     end
   end,
@@ -144,11 +177,15 @@ FECS::Scn::Play.add(
   end,
   FECS::Sys.new('ApplyPositionToSprite') do
     FECS::Cmp::Position.each do |position_cmp|
-      sprite = position_cmp.entity.component[FECS::Cmp::Tileset]
+      ent = position_cmp.entity
+      sprite = ent.component[FECS::Cmp::Tileset]
+      hitbox = ent.component[FECS::Cmp::Hitbox]
       sprite.tileset.step(4 * Rl.frame_time)
       if sprite
-        sprite.origin.x = position_cmp.x
-        sprite.origin.y = position_cmp.y
+        sprite.dest_rec.x = position_cmp.x
+        sprite.dest_rec.y = position_cmp.y
+        hitbox.rec.x = position_cmp.x + hitbox.offset_x
+        hitbox.rec.y = position_cmp.y + hitbox.offset_y
       end
     end
   end,
@@ -179,7 +216,7 @@ FECS::Scn::Play.add(
   end,
   FelECS::Sys.new('DebugRenderHitbox') do
     FECS::Cmp::Hitbox.each do |hitbox|
-      hitbox.rec.draw(color: BLACK)
+      #hitbox.rec.draw(color: BLACK)
       hitbox.rec.draw_lines(line_thick: 2, color: BLUE)
     end
   end
@@ -187,8 +224,10 @@ FECS::Scn::Play.add(
 
 FelECS::Order.sort(
   FECS::Sys::PlayerInput,
+  FECS::Sys::Walls,
   FECS::Sys::Movement,
   FECS::Sys::ApplyPositionToSprite,
   FECS::Sys::Render,
   FECS::Sys::ShowSpeed,
+  FECS::Sys::DebugRenderHitbox,
 )
