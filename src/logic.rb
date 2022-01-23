@@ -9,7 +9,7 @@ FECS::Cmp.new('Sprite',
               :dest_rect,
               :rotation,
               :tint)
-FECS::Cmp.new('SpriteSheet',
+FECS::Cmp.new('Tileset',
               :origin,
               :tileset,
               :dest_rect,
@@ -36,7 +36,7 @@ end
   #  tint: Rl::Color.new(255,255,255,255),
   #  rotation: 0
   #),
-  FECS::Cmp::SpriteSheet.new(
+  FECS::Cmp::Tileset.new(
     tileset: lancelot,
     dest_rect: Rl::Rectangle.new(0,0,48,48),
     origin: Rl::Vector2.new(0,0),
@@ -60,41 +60,87 @@ FECS::Scn::Play.add(
     velocity_cmp = ent.component[FECS::Cmp::Velocity]
     #velocity_cmp.x = 0
     #velocity_cmp.y = 0
+    input_x = 0
+    input_y = 0
     movement_cmp = ent.component[FECS::Cmp::Movement]
     if Rl.key_down? 87 # UP W
-      velocity_cmp.y += movement_cmp.acceleration 
-      velocity_cmp.y = [velocity_cmp.y,
-                        (movement_cmp.max_speed + movement_cmp.deceleration)].min
+      #velocity_cmp.y += movement_cmp.acceleration
+      input_y += 1.0
+      #velocity_cmp.y = [velocity_cmp.y,
+      #                  (movement_cmp.max_speed + movement_cmp.deceleration)].min
     end
     if Rl.key_down? 83 # DOWN S
-      velocity_cmp.y -= movement_cmp.acceleration 
-      velocity_cmp.y = [velocity_cmp.y,
-                        (-movement_cmp.max_speed - movement_cmp.deceleration)].max
+      #velocity_cmp.y -= movement_cmp.acceleration 
+      input_y -= 1.0
+      #velocity_cmp.y = [velocity_cmp.y,
+      #                  (-movement_cmp.max_speed - movement_cmp.deceleration)].max
     end
     if Rl.key_down? 65 # LEFT A
-      velocity_cmp.x += movement_cmp.acceleration 
-      velocity_cmp.x = [velocity_cmp.x,
-                        (movement_cmp.max_speed + movement_cmp.deceleration)].min
+      #velocity_cmp.x += movement_cmp.acceleration 
+      input_x += 1.0
+      #velocity_cmp.x = [velocity_cmp.x,
+      #                  (movement_cmp.max_speed + movement_cmp.deceleration)].min
     end
     if Rl.key_down? 68 # RIGHT D
-      velocity_cmp.x -= movement_cmp.acceleration 
-      velocity_cmp.x = [velocity_cmp.x,
-                        (-movement_cmp.max_speed - movement_cmp.deceleration)].max
+      #velocity_cmp.x -= movement_cmp.acceleration 
+      input_x -= 1.0
+      #velocity_cmp.x = [velocity_cmp.x,
+      #                  (-movement_cmp.max_speed - movement_cmp.deceleration)].max
     end
-    if velocity_cmp.x > (movement_cmp.deceleration)
-      velocity_cmp.x -= movement_cmp.deceleration 
-    elsif velocity_cmp.x <  (-movement_cmp.deceleration)
-      velocity_cmp.x += movement_cmp.deceleration 
-    else
+    # Normalize input
+    input_mag = Math.sqrt((input_x**2) + (input_y**2))
+    unless input_mag.zero?
+      input_x /= input_mag
+      input_y /= input_mag
+    end
+
+    # Add normalized speed
+    velocity_cmp.x += input_x * movement_cmp.acceleration
+    velocity_cmp.y += input_y * movement_cmp.acceleration
+
+    # Get magnitude
+    velocity_mag = Math.sqrt((velocity_cmp.x**2) + (velocity_cmp.y**2))
+
+    # If going slower then deceleration
+    if velocity_mag < movement_cmp.deceleration
+      # Set to 0
       velocity_cmp.x = 0
-    end
-    if velocity_cmp.y > (movement_cmp.deceleration)
-      velocity_cmp.y -= movement_cmp.deceleration 
-    elsif velocity_cmp.y <  (-movement_cmp.deceleration)
-      velocity_cmp.y += movement_cmp.deceleration 
-    else
       velocity_cmp.y = 0
+    else
+      # Normalize Velocity
+      velocity_x_mag = velocity_cmp.x / velocity_mag
+      velocity_y_mag = velocity_cmp.y / velocity_mag
+
+      # Add deceleration
+      velocity_cmp.x -= velocity_x_mag * movement_cmp.deceleration
+      velocity_cmp.y -= velocity_y_mag * movement_cmp.deceleration
+
+      velocity_mag = Math.sqrt((velocity_cmp.x**2) + (velocity_cmp.y**2))
+
+      if velocity_mag > movement_cmp.max_speed
+        velocity_x_mag = velocity_cmp.x / velocity_mag
+        velocity_y_mag = velocity_cmp.y / velocity_mag
+
+        velocity_cmp.x = velocity_x_mag * movement_cmp.max_speed
+        velocity_cmp.y = velocity_y_mag * movement_cmp.max_speed
+      end
     end
+
+
+    #if velocity_cmp.x > (movement_cmp.deceleration)
+    #  velocity_cmp.x -= movement_cmp.deceleration 
+    #elsif velocity_cmp.x <  (-movement_cmp.deceleration)
+    #  velocity_cmp.x += movement_cmp.deceleration 
+    #else
+    #  velocity_cmp.x = 0
+    #end
+    #if velocity_cmp.y > (movement_cmp.deceleration)
+    #  velocity_cmp.y -= movement_cmp.deceleration 
+    #elsif velocity_cmp.y <  (-movement_cmp.deceleration)
+    #  velocity_cmp.y += movement_cmp.deceleration 
+    #else
+    #  velocity_cmp.y = 0
+    #end
   end,
   FECS::Sys.new('Movement') do
     FECS::Cmp::Velocity.each do |velocity_cmp|
@@ -108,7 +154,7 @@ FECS::Scn::Play.add(
   end,
   FECS::Sys.new('ApplyPositionToSprite') do
     FECS::Cmp::Position.each do |position_cmp|
-      sprite = position_cmp.entity.component[FECS::Cmp::SpriteSheet]
+      sprite = position_cmp.entity.component[FECS::Cmp::Tileset]
       sprite.tileset.step(4 * Rl.frame_time)
       if sprite
         sprite.origin.x = position_cmp.x
@@ -118,17 +164,21 @@ FECS::Scn::Play.add(
   end,
   FECS::Sys.new('ShowSpeed') do
     player = FECS::Cmp::Player.first.entity
-    player_accel = player.component[FECS::Cmp::Velocity].x
+    y_vel = player.component[FECS::Cmp::Velocity].y.abs
+    x_vel = player.component[FECS::Cmp::Velocity].x.abs
+    vel = Math.sqrt(x_vel**2 + y_vel**2)
     movement = player.component[FECS::Cmp::Movement]
-    frame = player.component[FECS::Cmp::SpriteSheet].tileset.frame
+    frame = player.component[FECS::Cmp::Tileset].tileset.frame
     max_speed = (movement.max_speed)
 
-    Rl.draw_text(text: "x vel: #{"%.1f" % player_accel}", x: 500, y: 0, font_size: 30, color: BLACK)
-    Rl.draw_text(text: "x max: #{"%.1f" % max_speed}", x: 500, y: 30, font_size: 30, color: BLACK)
-    Rl.draw_text(text: "animation frame: #{"%.2f" % frame}", x: 500, y: 60, font_size: 30, color: BLACK)
+    Rl.draw_text(text: "x max: #{"%.1f" % max_speed}", x: 500, y: 0, font_size: 30, color: BLACK)
+    Rl.draw_text(text: "animation frame: #{"%.2f" % frame}", x: 500, y: 30, font_size: 30, color: BLACK)
+    Rl.draw_text(text: "x vel: #{"%.1f" % x_vel}", x: 500, y: 60, font_size: 30, color: BLACK)
+    Rl.draw_text(text: "y vel: #{"%.1f" % y_vel}", x: 500, y: 90, font_size: 30, color: BLACK)
+    Rl.draw_text(text: "n vel: #{"%.1f" % vel}", x: 500, y: 120, font_size: 30, color: BLACK)
   end,
   FECS::Sys.new('Render') do
-    #FECS::Cmp::SpriteSheet.each do |sprite_cmp|
+    #FECS::Cmp::Tileset.each do |sprite_cmp|
     #  Rl.draw_texture_pro(texture: sprite_cmp.texture,
     #                      origin: sprite_cmp.origin,
     #                      source_rect: sprite_cmp.source_rect,
@@ -136,7 +186,7 @@ FECS::Scn::Play.add(
     #                      tint: sprite_cmp.tint,
     #                      rotation: sprite_cmp.rotation)
     #end
-    FECS::Cmp::SpriteSheet.each do |sprite_cmp|
+    FECS::Cmp::Tileset.each do |sprite_cmp|
       Rl.draw_texture_pro(texture: sprite_cmp.tileset.texture,
                           origin: sprite_cmp.origin,
                           source_rect: sprite_cmp.tileset.rect,
