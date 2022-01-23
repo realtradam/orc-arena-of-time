@@ -15,6 +15,10 @@ FECS::Cmp.new('Tileset',
               :dest_rect,
               :rotation,
               :tint)
+FECS::Cmp.new('Hitbox',
+              :rect,
+              offset_x: 0,
+              offset_y: 0)
 FECS::Cmp.new('Hp', value: 0)
 
 lancelot = Tileset.new(texture: Rl::Texture.new('./assets/lancelot_.png'))
@@ -48,9 +52,12 @@ end
     acceleration: 3,
     max_speed: 300,
   ),
+  FECS::Cmp::Hitbox.new(
+    rect: Rl::Rectangle.new(0,0,16,20),
+    offset_x: 4,
+    offset_y: 4
+  ),
 )
-
-
 
 FECS::Stg.add(FECS::Scn.new('Play'))
 
@@ -125,22 +132,15 @@ FECS::Scn::Play.add(
         velocity_cmp.y = velocity_y_mag * movement_cmp.max_speed
       end
     end
-
-
-    #if velocity_cmp.x > (movement_cmp.deceleration)
-    #  velocity_cmp.x -= movement_cmp.deceleration 
-    #elsif velocity_cmp.x <  (-movement_cmp.deceleration)
-    #  velocity_cmp.x += movement_cmp.deceleration 
-    #else
-    #  velocity_cmp.x = 0
-    #end
-    #if velocity_cmp.y > (movement_cmp.deceleration)
-    #  velocity_cmp.y -= movement_cmp.deceleration 
-    #elsif velocity_cmp.y <  (-movement_cmp.deceleration)
-    #  velocity_cmp.y += movement_cmp.deceleration 
-    #else
-    #  velocity_cmp.y = 0
-    #end
+  end,
+  FECS::Sys.new('Walls') do
+    player = FECS::Cmp::Player.first.entity
+    player_hitbox = player.component[FECS::Cmp::Hitbox]
+    FECS::Cmp::Hitbox.each do |hitbox|
+      next if player_hitbox.equal? hitbox
+      if player_hitbox.collide_with_rect? hitbox
+      end
+    end
   end,
   FECS::Sys.new('Movement') do
     FECS::Cmp::Velocity.each do |velocity_cmp|
@@ -195,6 +195,8 @@ FECS::Scn::Play.add(
                           rotation: sprite_cmp.rotation)
     end
   end,
+  FelECS::Sys.new('DebugRenderHitbox') do
+  end
 )
 
 FelECS::Order.sort(
@@ -202,4 +204,5 @@ FelECS::Order.sort(
   FECS::Sys::Movement,
   FECS::Sys::ApplyPositionToSprite,
   FECS::Sys::Render,
+  FECS::Sys::ShowSpeed,
 )
