@@ -1,20 +1,16 @@
-# different states
-# each state has a set of frames
-# each state remembers what frame it was set it
-# each frame has a rectangle for rendering, and a rectangle for a hitbox
 class Tileset
   attr_accessor :texture
   attr_writer :frames
 
-  def initialize(*source_rects, texture:)
-    source_rects.each do |rect|
-      self.frames.push rect
+  def initialize(*source_recs, texture:)
+    source_recs.each do |rec|
+      self.frames.push rec
     end
 
     self.texture = texture
   end
 
-  def rect
+  def rec
     self.frames[self.frame.to_i]
   end
 

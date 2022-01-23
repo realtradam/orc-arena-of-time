@@ -5,18 +5,18 @@ FECS::Cmp.new('Movement', deceleration: 3, acceleration: 8, max_speed: 15)
 FECS::Cmp.new('Sprite',
               :texture,
               :origin,
-              :source_rect,
-              :dest_rect,
+              :source_rec,
+              :dest_rec,
               :rotation,
               :tint)
 FECS::Cmp.new('Tileset',
               :origin,
               :tileset,
-              :dest_rect,
+              :dest_rec,
               :rotation,
               :tint)
 FECS::Cmp.new('Hitbox',
-              :rect,
+              :rec,
               offset_x: 0,
               offset_y: 0)
 FECS::Cmp.new('Hp', value: 0)
@@ -32,17 +32,9 @@ end
   FECS::Cmp::Player.new,
   FECS::Cmp::Position.new,
   FECS::Cmp::Velocity.new,
-  #FECS::Cmp::Sprite.new(
-  #  texture: Rl::Texture.new('./assets/lancelot_.png'),
-  #  source_rect: Rl::Rectangle.new(0,0,24,24),
-  #  dest_rect: Rl::Rectangle.new(0,0,48,48),
-  #  origin: Rl::Vector2.new(0,0),
-  #  tint: Rl::Color.new(255,255,255,255),
-  #  rotation: 0
-  #),
   FECS::Cmp::Tileset.new(
     tileset: lancelot,
-    dest_rect: Rl::Rectangle.new(0,0,48,48),
+    dest_rec: Rl::Rectangle.new(0,0,48,48),
     origin: Rl::Vector2.new(0,0),
     tint: Rl::Color.new(255,255,255,255),
     rotation: 0
@@ -53,7 +45,7 @@ end
     max_speed: 300,
   ),
   FECS::Cmp::Hitbox.new(
-    rect: Rl::Rectangle.new(0,0,16,20),
+    rec: Rl::Rectangle.new(0,0,16,20),
     offset_x: 4,
     offset_y: 4
   ),
@@ -138,7 +130,7 @@ FECS::Scn::Play.add(
     player_hitbox = player.component[FECS::Cmp::Hitbox]
     FECS::Cmp::Hitbox.each do |hitbox|
       next if player_hitbox.equal? hitbox
-      if player_hitbox.collide_with_rect? hitbox
+      if player_hitbox.collide_with_rec? hitbox
       end
     end
   end,
@@ -178,24 +170,20 @@ FECS::Scn::Play.add(
     Rl.draw_text(text: "n vel: #{"%.1f" % vel}", x: 500, y: 120, font_size: 30, color: BLACK)
   end,
   FECS::Sys.new('Render') do
-    #FECS::Cmp::Tileset.each do |sprite_cmp|
-    #  Rl.draw_texture_pro(texture: sprite_cmp.texture,
-    #                      origin: sprite_cmp.origin,
-    #                      source_rect: sprite_cmp.source_rect,
-    #                      dest_rect: sprite_cmp.dest_rect,
-    #                      tint: sprite_cmp.tint,
-    #                      rotation: sprite_cmp.rotation)
-    #end
     FECS::Cmp::Tileset.each do |sprite_cmp|
       Rl.draw_texture_pro(texture: sprite_cmp.tileset.texture,
                           origin: sprite_cmp.origin,
-                          source_rect: sprite_cmp.tileset.rect,
-                          dest_rect: sprite_cmp.dest_rect,
+                          source_rec: sprite_cmp.tileset.rec,
+                          dest_rec: sprite_cmp.dest_rec,
                           tint: sprite_cmp.tint,
                           rotation: sprite_cmp.rotation)
     end
   end,
   FelECS::Sys.new('DebugRenderHitbox') do
+    FECS::Cmp::Hitbox.each do |hitbox|
+      hitbox.rec.draw(color: BLACK)
+      hitbox.rec.draw_lines(line_thick: 2, color: BLUE)
+    end
   end
 )
 
