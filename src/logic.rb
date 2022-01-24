@@ -1,7 +1,14 @@
 FECS::Cmp.new('Player')
-FECS::Cmp.new('Velocity', x: 0, y: 0)
-FECS::Cmp.new('Position', x: 0, y: 0)
-FECS::Cmp.new('Movement', deceleration: 3, acceleration: 8, max_speed: 15)
+FECS::Cmp.new('Velocity',
+              x: 0,
+              y: 0)
+FECS::Cmp.new('Position',
+              x: 0,
+              y: 0)
+FECS::Cmp.new('Movement',
+              deceleration: 3,
+              acceleration: 8,
+              max_speed: 15)
 FECS::Cmp.new('Sprite',
               :texture,
               :origin,
@@ -26,6 +33,9 @@ FECS::Cmp.new('Input',
               move_up: false,
               move_down: false,
              )
+FECS::Cmp.new('ScissorBox',
+              :rec)
+FECS::Cmp::ScissorBox.new(rec: Rl::Rectangle.new(200,200,250,250))
 Input = FECS::Cmp::Input.new
 
 lancelot = Tileset.new(texture: Rl::Texture.new('./assets/lancelot_.png'))
@@ -37,15 +47,31 @@ end
 puts 'finished making rectangles'
 
 FECS::Cmp::Hitbox.new(
-  rec: Rl::Rectangle.new(100,100,250,250),
-  offset_x: 4*2,
-  offset_y: 4*2
+  rec: Rl::Rectangle.new(250,250,250,150),
+  offset_x: 0,#4*2,
+  offset_y: 0#4*2
 )
+FECS::Cmp::Hitbox.new(
+  rec: Rl::Rectangle.new(350,200,50,350),
+  offset_x: 0,#4*2,
+  offset_y: 0#4*2
+)
+FECS::Cmp::Hitbox.new(
+  rec: Rl::Rectangle.new(70,470,200,200),
+  offset_x: 0,#4*2,
+  offset_y: 0#4*2
+)
+FECS::Cmp::Hitbox.new(
+  rec: Rl::Rectangle.new(470,470,200,200),
+  offset_x: 0,#4*2,
+  offset_y: 0#4*2
+)
+
 
 
 @player = FECS::Ent.new(
   FECS::Cmp::Player.new,
-  FECS::Cmp::Position.new,
+  FECS::Cmp::Position.new(x: 120, y: 300),
   FECS::Cmp::Velocity.new,
   FECS::Cmp::Tileset.new(
     tileset: lancelot,
@@ -55,9 +81,9 @@ FECS::Cmp::Hitbox.new(
     rotation: 0
   ),
   FECS::Cmp::Movement.new(
-    deceleration: 1000,
+    deceleration: 2500,
     acceleration: 1000,
-    max_speed: 300,
+    max_speed: 400,
   ),
   FECS::Cmp::Hitbox.new(
     rec: Rl::Rectangle.new(0,0,16*2,20*2),
@@ -179,9 +205,8 @@ FECS::Scn::Play.add(
             # else push up
           else
             #position_cmp.y -= intersection.height - (velocity_cmp.y * Rl.frame_time)
-            #position_cmp.y = hitbox.rec.y - player_hitbox.rec.height - player_hitbox.offset_y
+            position_cmp.y = hitbox.rec.y - player_hitbox.rec.height - player_hitbox.offset_y
             #set to blue.y - green.height
-
           end
           velocity_cmp.y = 0
           if !(Input.move_left ^ Input.move_right)
@@ -234,12 +259,14 @@ FECS::Scn::Play.add(
     frame = player.component[FECS::Cmp::Tileset].tileset.frame
     max_speed = (movement.max_speed)
 
-    Rl.draw_text(text: "x max: #{"%.1f" % max_speed}", x: 500, y: 0, font_size: 30, color: BLACK)
-    Rl.draw_text(text: "animation frame: #{"%.2f" % frame}", x: 500, y: 30, font_size: 30, color: BLACK)
-    Rl.draw_text(text: "x vel: #{"%.1f" % x_vel}", x: 500, y: 60, font_size: 30, color: BLACK)
-    Rl.draw_text(text: "y vel: #{"%.1f" % y_vel}", x: 500, y: 90, font_size: 30, color: BLACK)
-    Rl.draw_text(text: "n vel: #{"%.1f" % vel}", x: 500, y: 120, font_size: 30, color: BLACK)
-    Rl.draw_text(text: "fps: #{Rl.fps}", x: 500, y: 150, font_size: 30, color: BLACK)
+    #Rl.draw_text(text: "x max: #{"%.1f" % max_speed}", x: 500, y: 0, font_size: 30, color: BLACK)
+    #Rl.draw_text(text: "animation frame: #{"%.2f" % frame}", x: 500, y: 30, font_size: 30, color: BLACK)
+    #Rl.draw_text(text: "x vel: #{"%.1f" % x_vel}", x: 500, y: 60, font_size: 30, color: BLACK)
+    #Rl.draw_text(text: "y vel: #{"%.1f" % y_vel}", x: 500, y: 90, font_size: 30, color: BLACK)
+    Rl.draw_text(text: "speed: #{"%.1f" % vel}", x: 10, y: 10, font_size: 30, color: BLACK)
+    Rl.draw_text(text: "fps: #{Rl.fps}", x: 10, y: 40, font_size: 30, color: BLACK)
+    Rl.draw_text(text: "mouse x: #{Rl.mouse_x}", x: 10, y: 70, font_size: 30, color: BLACK)
+    Rl.draw_text(text: "mouse y: #{Rl.mouse_y}", x: 10, y: 100, font_size: 30, color: BLACK)
   end,
   FECS::Sys.new('Render') do
     FECS::Cmp::Tileset.each do |sprite_cmp|
