@@ -121,40 +121,36 @@ FECS::Scn::Play.add(
   end,
   FECS::Sys.new('Walls') do
     player = FECS::Cmp::Player.first.entity
-    player_hitbox = player.component[FECS::Cmp::Hitbox].rec
+    player_hitbox = player.component[FECS::Cmp::Hitbox]
     position_cmp = player.component[FECS::Cmp::Position]
     velocity_cmp = player.component[FECS::Cmp::Velocity]
     step = Rl::Rectangle.new(
-      position_cmp.x + (velocity_cmp.x * Rl.frame_time),
-      position_cmp.y + (velocity_cmp.y * Rl.frame_time),
-      player_hitbox.width,
-      player_hitbox.height
+      position_cmp.x + (velocity_cmp.x * Rl.frame_time) + player_hitbox.offset_x,
+      position_cmp.y + (velocity_cmp.y * Rl.frame_time) + player_hitbox.offset_y,
+      player_hitbox.rec.width,
+      player_hitbox.rec.height
     )
-
     FECS::Cmp::Hitbox.each do |hitbox|
-      next if step.equal? hitbox.rec
+      next if hitbox.equal? player_hitbox
       if step.collide_with_rec? hitbox.rec
-        puts 'about to do get a new rec'
         intersection = step.collision_rec hitbox.rec
-        puts 'got it'
-        puts intersection
         #left collision
-        if intersection.width < step.width
+        if intersection.width < intersection.height
           # Colliding right/left
           # if x equal push right
-          if intersection.x.equals? step.x
+          if intersection.x.equal? step.x
             position_cmp.x += intersection.width
-            # else push left
+          # else push left
           else
             position_cmp.x -= intersection.width
           end
           velocity_cmp.x = 0
-        elsif intersection.height < step.height
+        elsif intersection.height < intersection.width
           # Colliding up/down
           # if y equal push down
-          if intersection.y.equals? step.y
+          if intersection.y.equal? step.y
             position_cmp.y += intersection.height
-            # else push up
+          # else push up
           else
             position_cmp.y -= intersection.height
           end
