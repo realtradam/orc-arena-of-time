@@ -1,26 +1,48 @@
-FECS::Cmp.new('CurrentLevel', level: 0)
+FECS::Cmp.new('CurrentLevel', level: -1)
 
-@current_level = FECS::Cmp::CurrentLevel.new
+CurrentLevel = FECS::Cmp::CurrentLevel.new
 
-@levels = []
+Levels = []
 
+# First level
 level0 = {
-  start: [0,0],
-  scissor_dimensions: [300,300],
-  #scissor_path: [],
-  end: [40,40,10,10],
+  player_spawn: Rl::Vector2.new(120,300),
+  scissor_size: Path.new(
+    lambda do |time|
+      [300,
+       300]
+    end
+  ),
+  scissor_path: Path.new(
+    lambda do |time|
+      [Math.bezier([200, 200, 1183, 200],time)-150,
+       Math.bezier([200, 1183, 200, 200],time)-150]
+    end
+  ),
+  end_goal: Rl::Rectangle.new(40,40,10,10),
   walls: [
-    [250,250,250,150],
-    [350,200,50,350],
-    [70,470,200,200],
-    [350,200,50,350],
-    [470,470,200,200]
+    [250,250, 250,150], 
+    [350,200, 050,350], 
+    [070,470, 200,200], 
+    [350,200, 050,350], 
+    [470,470, 200,020]
   ],
 }
 
-@levels.push(level0)
+Levels.push(level0)
 
 FECS::Sys.new('ConstructLevel') do
+  FECS::Sys::DestroyLevel.call
+  level = Levels[CurrentLevel.level]
+
+  level[:walls].each do |wall|
+    FECS::Cmp::Hitbox.new(
+      rec: Rl::Rectangle.new(*wall),
+      offset_x: 0,
+      offset_y: 0
+    )
+  end
+
   # use current_level component to know which level from levels array to load
   # create entities e.g. walls
   # set properties for scissor box
@@ -34,5 +56,5 @@ FECS::Sys.new('DestroyLevel') do
 end
 
 # changing the level will destroy the current level and set up the next one
-FECS::Sys::ConstructLevel.trigger_when_is_changed(@current_level, :level)
-FECS::Sys::DestroyLevel.trigger_when_is_changed(@current_level, :level)
+FECS::Sys::ConstructLevel.trigger_when_is_changed(CurrentLevel, :level)
+#FECS::Sys::DestroyLevel.trigger_when_is_changed(CurrentLevel, :level)

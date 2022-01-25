@@ -32,18 +32,19 @@ FECS::Cmp.new('Input',
               move_left: false,
               move_up: false,
               move_down: false,
+              show_debug: false,
              )
 FECS::Cmp.new('ScissorBox',
               :rec)
 
-ScissorPath = Path.new(
-  lambda do |time|
-    [Math.bezier([200, 200, 1183, 200],time)-150,
-     Math.bezier([200, 1183, 200, 200],time)-150]
-  end
-)
+#ScissorPath = Path.new(
+#  lambda do |time|
+#    [Math.bezier([200, 200, 1183, 200],time)-150,
+#     Math.bezier([200, 1183, 200, 200],time)-150]
+#  end
+#)
 
-FECS::Cmp::ScissorBox.new(rec: Rl::Rectangle.new(200,200,250,250))
+#FECS::Cmp::ScissorBox.new(rec: Rl::Rectangle.new(200,200,250,250))
 
 Input = FECS::Cmp::Input.new
 
@@ -54,7 +55,6 @@ puts 'about to make rectangles'
   lancelot.frames.push Rl::Rectangle.new((24 * x), 24*2, 24, 24)
 end
 puts 'finished making rectangles'
-
 MovingHitbox1 = FECS::Cmp::Hitbox.new(
   rec: Rl::Rectangle.new(150,50,35,150),
   offset_x: 0,#4*2,
@@ -65,6 +65,7 @@ MovingHitbox2 = FECS::Cmp::Hitbox.new(
   offset_x: 0,#4*2,
   offset_y: 0#4*2
 )
+=begin
 FECS::Cmp::Hitbox.new(
   rec: Rl::Rectangle.new(250,250,250,150),
   offset_x: 0,#4*2,
@@ -85,7 +86,7 @@ FECS::Cmp::Hitbox.new(
   offset_x: 0,#4*2,
   offset_y: 0#4*2
 )
-
+=end
 
 
 @player = FECS::Ent.new(
@@ -119,6 +120,7 @@ FECS::Scn::Play.add(
     Input.move_left = Rl.key_down? 65 # A
     Input.move_down = Rl.key_down? 83 # S
     Input.move_right = Rl.key_down? 68 # D
+    Input.show_debug = Rl.key_down? 80 # P
   end,
   FECS::Sys.new('PlayerMovement') do
     ent = FECS::Cmp::Player.first.entity
@@ -180,8 +182,8 @@ FECS::Scn::Play.add(
   end,
   FECS::Sys.new('Walls') do
 
-    MovingHitbox1.rec.x = (Math.sin(Rl.time) * 100) + 250
-    MovingHitbox2.rec.x = (Math.sin(Rl.time) * 100) + 150
+    MovingHitbox1.rec.x = (Math.sin(Rl.time) * 300) + 250 + 50
+    MovingHitbox2.rec.x = (Math.sin(Rl.time) * 300) + 150 + 50
 
     player = FECS::Cmp::Player.first.entity
     player_hitbox = player.component[FECS::Cmp::Hitbox]
@@ -205,26 +207,32 @@ FECS::Scn::Play.add(
             #position_cmp.x += intersection.width + (velocity_cmp.x * Rl.frame_time)
             #move blue.width + blue.x
             position_cmp.x = hitbox.rec.x + hitbox.rec.width - player_hitbox.offset_x
-            velocity_cmp.x = 0 if velocity_cmp.x.negative? && !Input.move_right
-            if !((Input.move_up ^ Input.move_down) || Input.move_right)
-              Helper.decelerate(
-                velocity_cmp,
-                player.component[FECS::Cmp::Movement]
-              )
-            end
+            velocity_cmp.x = 0 if velocity_cmp.x.negative?# && !Input.move_right
+            #if !((Input.move_up ^ Input.move_down) || Input.move_right)
+            #  Helper.decelerate(
+            #    velocity_cmp,
+            #    player.component[FECS::Cmp::Movement]
+            #  )
+            #end
 
             # else push left
           else
             #position_cmp.x -= intersection.width - (velocity_cmp.x * Rl.frame_time)
             #move blue.x -  green.width
             position_cmp.x = hitbox.rec.x - player_hitbox.rec.width - player_hitbox.offset_x
-            velocity_cmp.x = 0 if velocity_cmp.x.positive? && !Input.move_left
-            if !((Input.move_up ^ Input.move_down) || Input.move_left)
-              Helper.decelerate(
-                velocity_cmp,
-                player.component[FECS::Cmp::Movement]
-              )
-            end
+            velocity_cmp.x = 0 if velocity_cmp.x.positive?# && !Input.move_left
+            #if !((Input.move_up ^ Input.move_down) || Input.move_left)
+            #  Helper.decelerate(
+            #    velocity_cmp,
+            #    player.component[FECS::Cmp::Movement]
+            #  )
+            #end
+          end
+          if !(Input.move_up ^ Input.move_down)
+            Helper.decelerate(
+              velocity_cmp,
+              player.component[FECS::Cmp::Movement]
+            )
           end
         elsif intersection.height < intersection.width
           # Colliding up/down
@@ -286,57 +294,73 @@ FECS::Scn::Play.add(
     end
   end,
   FECS::Sys.new('ShowSpeed') do
-    player = FECS::Cmp::Player.first.entity
-    y_vel = player.component[FECS::Cmp::Velocity].y.abs
-    x_vel = player.component[FECS::Cmp::Velocity].x.abs
-    vel = Math.sqrt(x_vel**2 + y_vel**2)
-    movement = player.component[FECS::Cmp::Movement]
-    frame = player.component[FECS::Cmp::Tileset].tileset.frame
-    max_speed = (movement.max_speed)
+    if Input.show_debug
+      player = FECS::Cmp::Player.first.entity
+      y_vel = player.component[FECS::Cmp::Velocity].y.abs
+      x_vel = player.component[FECS::Cmp::Velocity].x.abs
+      vel = Math.sqrt(x_vel**2 + y_vel**2)
+      movement = player.component[FECS::Cmp::Movement]
+      frame = player.component[FECS::Cmp::Tileset].tileset.frame
+      max_speed = (movement.max_speed)
 
-    #Rl.draw_text(text: "x max: #{"%.1f" % max_speed}", x: 500, y: 0, font_size: 30, color: BLACK)
-    #Rl.draw_text(text: "animation frame: #{"%.2f" % frame}", x: 500, y: 30, font_size: 30, color: BLACK)
-    #Rl.draw_text(text: "x vel: #{"%.1f" % x_vel}", x: 500, y: 60, font_size: 30, color: BLACK)
-    #Rl.draw_text(text: "y vel: #{"%.1f" % y_vel}", x: 500, y: 90, font_size: 30, color: BLACK)
-    Rl.draw_text(text: "speed: #{"%.1f" % vel}", x: 10, y: 10, font_size: 30, color: BLACK)
-    Rl.draw_text(text: "fps: #{Rl.fps}", x: 10, y: 40, font_size: 30, color: BLACK)
-    Rl.draw_text(text: "mouse x: #{Rl.mouse_x}", x: 10, y: 70, font_size: 30, color: BLACK)
-    Rl.draw_text(text: "mouse y: #{Rl.mouse_y}", x: 10, y: 100, font_size: 30, color: BLACK)
+      #Rl.draw_text(text: "x max: #{"%.1f" % max_speed}", x: 500, y: 0, font_size: 30, color: BLACK)
+      #Rl.draw_text(text: "animation frame: #{"%.2f" % frame}", x: 500, y: 30, font_size: 30, color: BLACK)
+      #Rl.draw_text(text: "x vel: #{"%.1f" % x_vel}", x: 500, y: 60, font_size: 30, color: BLACK)
+      #Rl.draw_text(text: "y vel: #{"%.1f" % y_vel}", x: 500, y: 90, font_size: 30, color: BLACK)
+      Rl.draw_text(text: "speed: #{"%.1f" % vel}", x: 10, y: 10, font_size: 30, color: BLACK)
+      Rl.draw_text(text: "fps: #{Rl.fps}", x: 10, y: 40, font_size: 30, color: BLACK)
+      Rl.draw_text(text: "mouse x: #{Rl.mouse_x}", x: 10, y: 70, font_size: 30, color: BLACK)
+      Rl.draw_text(text: "mouse y: #{Rl.mouse_y}", x: 10, y: 100, font_size: 30, color: BLACK)
+    end
   end,
   FECS::Sys.new('Render') do
-    #Rl.scissor_mode(
-    #  x: Math.bezier([200, 200, 1183, 200],(Rl.time/8) % 1)-150,
-    #  y: Math.bezier([200, 1183, 200, 200],(Rl.time/8) % 1)-150,
-    #  width: 300,
-    #  height: 300) do
-    FECS::Cmp::Tileset.each do |sprite_cmp|
-      Rl.draw_texture_pro(texture: sprite_cmp.tileset.texture,
-                          origin: sprite_cmp.origin,
-                          source_rec: sprite_cmp.tileset.rec,
-                          dest_rec: sprite_cmp.dest_rec,
-                          tint: sprite_cmp.tint,
-                          rotation: sprite_cmp.rotation)
-    end
-    #  end
+    scissor_path = Levels[CurrentLevel.level][:scissor_path].call((Rl.time/8) % 1)
+    scissor_size = Levels[CurrentLevel.level][:scissor_size].call((Rl.time/8) % 1)
+    Rl.scissor_mode(
+      x: scissor_path[0],
+      y: scissor_path[1],
+      width: scissor_size[0],
+      height: scissor_size[1]) do
+        FECS::Cmp::Tileset.each do |sprite_cmp|
+          Rl.draw_texture_pro(texture: sprite_cmp.tileset.texture,
+                              origin: sprite_cmp.origin,
+                              source_rec: sprite_cmp.tileset.rec,
+                              dest_rec: sprite_cmp.dest_rec,
+                              tint: sprite_cmp.tint,
+                              rotation: sprite_cmp.rotation)
+        end
+      end
+      if Input.show_debug
+        FECS::Cmp::Tileset.each do |sprite_cmp|
+          Rl.draw_texture_pro(texture: sprite_cmp.tileset.texture,
+                              origin: sprite_cmp.origin,
+                              source_rec: sprite_cmp.tileset.rec,
+                              dest_rec: sprite_cmp.dest_rec,
+                              tint: sprite_cmp.tint,
+                              rotation: sprite_cmp.rotation)
+        end
+      end
   end,
   FelECS::Sys.new('DebugRenderHitbox') do
-    scissor_arry = ScissorPath.call((Rl.time/8) % 1)
+    scissor_path = Levels[CurrentLevel.level][:scissor_path].call((Rl.time/8) % 1)
+    scissor_size = Levels[CurrentLevel.level][:scissor_size].call((Rl.time/8) % 1)
     Rl.scissor_mode(
-      x: scissor_arry[0],
-      y: scissor_arry[1],
-      width: 300,
-      height: 300) do
+      x: scissor_path[0],
+      y: scissor_path[1],
+      width: scissor_size[0],
+      height: scissor_size[1]) do
         FECS::Cmp::Hitbox.each do |hitbox|
           #hitbox.rec.draw(color: BLACK)
           hitbox.rec.draw_lines(line_thick: 2, color: BLUE)
         end
       end
-      faded_blue = Rl::Color.new(0,121,241,30)
-      FECS::Cmp::Hitbox.each do |hitbox|
-        #hitbox.rec.draw(color: BLACK)
-        hitbox.rec.draw_lines(line_thick: 2, color: faded_blue)
+      if Input.show_debug
+        faded_blue = Rl::Color.new(0,121,241,30)
+        FECS::Cmp::Hitbox.each do |hitbox|
+          #hitbox.rec.draw(color: BLACK)
+          hitbox.rec.draw_lines(line_thick: 2, color: faded_blue)
+        end
       end
-
       Rl::Rectangle.new(
         Math.bezier([200, 200, 1183, 200],(Rl.time/8) % 1)-150,
         Math.bezier([200, 1183, 200, 200],(Rl.time/8) % 1)-150,
@@ -344,6 +368,8 @@ FECS::Scn::Play.add(
         300).draw_lines(line_thick: 3, color: RED)
   end
 )
+
+CurrentLevel.level = 0
 
 FelECS::Order.sort(
   FECS::Sys::PlayerInput,
