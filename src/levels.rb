@@ -34,5 +34,5 @@ FECS::Sys.new('DestroyLevel') do
 end
 
 # changing the level will destroy the current level and set up the next one
-FECS::Sys::ConstructLevel.trigger_when_is_set(@current_level, :level)
-FECS::Sys::DestroyLevel.trigger_when_is_set(@current_level, :level)
+FECS::Sys::ConstructLevel.trigger_when_is_changed(@current_level, :level)
+FECS::Sys::DestroyLevel.trigger_when_is_changed(@current_level, :level)
