@@ -59,3 +59,43 @@ module Helper
     end
   end
 end
+
+module Math
+  class <<self
+    # get a value in between two values
+    # percent is represented by a decimal
+    def interpolate(a, b, decimal_percent)
+      ((b - a) * decimal_percent) + a
+    end
+
+    def midpoint(a, c)
+      (a + c) / 2
+    end
+
+    def extend(a, b)
+      (2 * b) - a
+    end
+
+    def bezier(points, time)
+      result = 0
+      points.each_with_index do |point, index|
+        result += self.choose(points.length - 1.0, index) * ((1.0 - time) ** (points.length - 1.0 - index)) * (time ** index) * point
+      end
+      result
+    end
+
+
+    def choose(n, r)
+      self.factorial(n).to_f / (self.factorial(r).to_f * self.factorial(n-r).to_f)
+    end
+
+    def factorial(f)
+      if (@factorial ||= [1,1])[f].nil?
+        @factorial[f] = f * factorial(f-1)
+      else
+        @factorial[f]
+      end
+    end
+
+  end
+end

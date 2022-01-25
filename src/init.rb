@@ -6,4 +6,5 @@ Rl.target_fps = 60
 
 WHITE = Rl::Color.new(255,255,255,255)
 BLACK = Rl::Color.new(0,0,0,255)
-BLUE = Rl::Color.new(0,0,255,255)
+BLUE = Rl::Color.new(0, 121, 241, 255)
+RED = Rl::Color.new(230, 41, 55, 255)

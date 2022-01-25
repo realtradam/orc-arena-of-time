@@ -35,14 +35,15 @@ FECS::Cmp.new('Input',
              )
 FECS::Cmp.new('ScissorBox',
               :rec)
+
 FECS::Cmp::ScissorBox.new(rec: Rl::Rectangle.new(200,200,250,250))
 Input = FECS::Cmp::Input.new
 
 lancelot = Tileset.new(texture: Rl::Texture.new('./assets/lancelot_.png'))
 
 puts 'about to make rectangles'
-8.times do |x|
-  lancelot.frames.push Rl::Rectangle.new((24 * x), 0, 24, 24)
+4.times do |x|
+  lancelot.frames.push Rl::Rectangle.new((24 * x), 24*2, 24, 24)
 end
 puts 'finished making rectangles'
 
@@ -241,7 +242,10 @@ FECS::Scn::Play.add(
       ent = position_cmp.entity
       sprite = ent.component[FECS::Cmp::Tileset]
       hitbox = ent.component[FECS::Cmp::Hitbox]
-      sprite.tileset.step(4 * Rl.frame_time)
+      y_vel = ent.component[FECS::Cmp::Velocity].y
+      x_vel = ent.component[FECS::Cmp::Velocity].x
+      velocity_mag = Math.sqrt((x_vel**2) + (y_vel**2))
+      sprite.tileset.step((velocity_mag*0.04) * Rl.frame_time)
       if sprite
         sprite.dest_rec.x = position_cmp.x
         sprite.dest_rec.y = position_cmp.y
@@ -269,6 +273,11 @@ FECS::Scn::Play.add(
     Rl.draw_text(text: "mouse y: #{Rl.mouse_y}", x: 10, y: 100, font_size: 30, color: BLACK)
   end,
   FECS::Sys.new('Render') do
+    #Rl.scissor_mode(
+    #  x: Math.bezier([200, 200, 1183, 200],(Rl.time/8) % 1)-150,
+    #  y: Math.bezier([200, 1183, 200, 200],(Rl.time/8) % 1)-150,
+    #  width: 300,
+    #  height: 300) do
     FECS::Cmp::Tileset.each do |sprite_cmp|
       Rl.draw_texture_pro(texture: sprite_cmp.tileset.texture,
                           origin: sprite_cmp.origin,
@@ -277,12 +286,30 @@ FECS::Scn::Play.add(
                           tint: sprite_cmp.tint,
                           rotation: sprite_cmp.rotation)
     end
+    #  end
   end,
   FelECS::Sys.new('DebugRenderHitbox') do
-    FECS::Cmp::Hitbox.each do |hitbox|
-      #hitbox.rec.draw(color: BLACK)
-      hitbox.rec.draw_lines(line_thick: 2, color: BLUE)
-    end
+    Rl.scissor_mode(
+      x: Math.bezier([200, 200, 1183, 200],(Rl.time/8) % 1)-150,
+      y: Math.bezier([200, 1183, 200, 200],(Rl.time/8) % 1)-150,
+      width: 300,
+      height: 300) do
+        FECS::Cmp::Hitbox.each do |hitbox|
+          #hitbox.rec.draw(color: BLACK)
+          hitbox.rec.draw_lines(line_thick: 2, color: BLUE)
+        end
+      end
+      faded_blue = Rl::Color.new(0,121,241,30)
+      FECS::Cmp::Hitbox.each do |hitbox|
+        #hitbox.rec.draw(color: BLACK)
+        hitbox.rec.draw_lines(line_thick: 2, color: faded_blue)
+      end
+
+      Rl::Rectangle.new(
+        Math.bezier([200, 200, 1183, 200],(Rl.time/8) % 1)-150,
+        Math.bezier([200, 1183, 200, 200],(Rl.time/8) % 1)-150,
+        300,
+        300).draw_lines(line_thick: 3, color: RED)
   end
 )
 
