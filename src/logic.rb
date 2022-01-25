@@ -36,7 +36,15 @@ FECS::Cmp.new('Input',
 FECS::Cmp.new('ScissorBox',
               :rec)
 
+ScissorPath = Path.new(
+  lambda do |time|
+    [Math.bezier([200, 200, 1183, 200],time)-150,
+     Math.bezier([200, 1183, 200, 200],time)-150]
+  end
+)
+
 FECS::Cmp::ScissorBox.new(rec: Rl::Rectangle.new(200,200,250,250))
+
 Input = FECS::Cmp::Input.new
 
 lancelot = Tileset.new(texture: Rl::Texture.new('./assets/lancelot_.png'))
@@ -47,6 +55,16 @@ puts 'about to make rectangles'
 end
 puts 'finished making rectangles'
 
+MovingHitbox1 = FECS::Cmp::Hitbox.new(
+  rec: Rl::Rectangle.new(150,50,35,150),
+  offset_x: 0,#4*2,
+  offset_y: 0#4*2
+)
+MovingHitbox2 = FECS::Cmp::Hitbox.new(
+  rec: Rl::Rectangle.new(50,50,35,150),
+  offset_x: 0,#4*2,
+  offset_y: 0#4*2
+)
 FECS::Cmp::Hitbox.new(
   rec: Rl::Rectangle.new(250,250,250,150),
   offset_x: 0,#4*2,
@@ -161,6 +179,10 @@ FECS::Scn::Play.add(
     end
   end,
   FECS::Sys.new('Walls') do
+
+    MovingHitbox1.rec.x = (Math.sin(Rl.time) * 100) + 250
+    MovingHitbox2.rec.x = (Math.sin(Rl.time) * 100) + 150
+
     player = FECS::Cmp::Player.first.entity
     player_hitbox = player.component[FECS::Cmp::Hitbox]
     position_cmp = player.component[FECS::Cmp::Position]
@@ -183,18 +205,26 @@ FECS::Scn::Play.add(
             #position_cmp.x += intersection.width + (velocity_cmp.x * Rl.frame_time)
             #move blue.width + blue.x
             position_cmp.x = hitbox.rec.x + hitbox.rec.width - player_hitbox.offset_x
+            velocity_cmp.x = 0 if velocity_cmp.x.negative? && !Input.move_right
+            if !((Input.move_up ^ Input.move_down) || Input.move_right)
+              Helper.decelerate(
+                velocity_cmp,
+                player.component[FECS::Cmp::Movement]
+              )
+            end
+
             # else push left
           else
             #position_cmp.x -= intersection.width - (velocity_cmp.x * Rl.frame_time)
             #move blue.x -  green.width
             position_cmp.x = hitbox.rec.x - player_hitbox.rec.width - player_hitbox.offset_x
-          end
-          velocity_cmp.x = 0
-          if !(Input.move_up ^ Input.move_down)
-            Helper.decelerate(
-              velocity_cmp,
-              player.component[FECS::Cmp::Movement]
-            )
+            velocity_cmp.x = 0 if velocity_cmp.x.positive? && !Input.move_left
+            if !((Input.move_up ^ Input.move_down) || Input.move_left)
+              Helper.decelerate(
+                velocity_cmp,
+                player.component[FECS::Cmp::Movement]
+              )
+            end
           end
         elsif intersection.height < intersection.width
           # Colliding up/down
@@ -204,12 +234,13 @@ FECS::Scn::Play.add(
             position_cmp.y = hitbox.rec.y + hitbox.rec.height - player_hitbox.offset_y
             #set to blue.y + blue.height
             # else push up
+            velocity_cmp.y = 0 if velocity_cmp.y.negative?
           else
             #position_cmp.y -= intersection.height - (velocity_cmp.y * Rl.frame_time)
             position_cmp.y = hitbox.rec.y - player_hitbox.rec.height - player_hitbox.offset_y
             #set to blue.y - green.height
+            velocity_cmp.y = 0 if velocity_cmp.y.positive?
           end
-          velocity_cmp.y = 0
           if !(Input.move_left ^ Input.move_right)
             Helper.decelerate(
               velocity_cmp,
@@ -289,9 +320,10 @@ FECS::Scn::Play.add(
     #  end
   end,
   FelECS::Sys.new('DebugRenderHitbox') do
+    scissor_arry = ScissorPath.call((Rl.time/8) % 1)
     Rl.scissor_mode(
-      x: Math.bezier([200, 200, 1183, 200],(Rl.time/8) % 1)-150,
-      y: Math.bezier([200, 1183, 200, 200],(Rl.time/8) % 1)-150,
+      x: scissor_arry[0],
+      y: scissor_arry[1],
       width: 300,
       height: 300) do
         FECS::Cmp::Hitbox.each do |hitbox|

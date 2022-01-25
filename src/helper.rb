@@ -34,7 +34,23 @@ class Tileset
   def frames
     @frames ||= []
   end
+end
 
+class Path
+  def call(time)
+    return nil unless self.paths[time.to_i]
+    self.paths[time.to_i].call(time % 1)
+  end
+
+  def initialize(*paths)
+    paths.each do |path|
+      self.paths.push path
+    end
+  end
+
+  def paths
+    @paths ||= []
+  end
 end
 
 module Helper
