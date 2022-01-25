@@ -361,11 +361,7 @@ FECS::Scn::Play.add(
           hitbox.rec.draw_lines(line_thick: 2, color: faded_blue)
         end
       end
-      Rl::Rectangle.new(
-        Math.bezier([200, 200, 1183, 200],(Rl.time/8) % 1)-150,
-        Math.bezier([200, 1183, 200, 200],(Rl.time/8) % 1)-150,
-        300,
-        300).draw_lines(line_thick: 3, color: RED)
+      Rl::Rectangle.new(scissor_path[0], scissor_path[1], scissor_size[0], scissor_size[1]).draw_lines(line_thick: 3, color: RED)
   end
 )
 
