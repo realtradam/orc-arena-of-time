@@ -316,6 +316,7 @@ FECS::Scn::Play.add(
   FECS::Sys.new('Render') do
     scissor_path = Levels[CurrentLevel.level][:scissor_path].call((Rl.time/8) % 1)
     scissor_size = Levels[CurrentLevel.level][:scissor_size].call((Rl.time/8) % 1)
+    Rl::Rectangle.new(scissor_path[0], scissor_path[1], scissor_size[0], scissor_size[1]).draw(color: WHITE)
     Rl.scissor_mode(
       x: scissor_path[0],
       y: scissor_path[1],
