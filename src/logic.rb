@@ -67,11 +67,10 @@ FECS::Cmp::Sprite.new(
   dest_rec: Rl::Rectangle.new(0,0,448*2,336*2)
 )
 
-puts 'about to make rectangles'
 4.times do |x|
   lancelot.frames.push Rl::Rectangle.new((24 * x), 24*2, 24, 24)
 end
-puts 'finished making rectangles'
+=begin
 MovingHitbox1 = FECS::Cmp::Hitbox.new(
   rec: Rl::Rectangle.new(150,50,35,150),
   offset_x: 0,#4*2,
@@ -82,7 +81,6 @@ MovingHitbox2 = FECS::Cmp::Hitbox.new(
   offset_x: 0,#4*2,
   offset_y: 0#4*2
 )
-=begin
 FECS::Cmp::Hitbox.new(
   rec: Rl::Rectangle.new(250,250,250,150),
   offset_x: 0,#4*2,
@@ -207,8 +205,8 @@ FECS::Scn::Play.add(
   end,
   FECS::Sys.new('Walls') do
 
-    MovingHitbox1.rec.x = (Math.sin(Rl.time) * 300) + 250 + 50
-    MovingHitbox2.rec.x = (Math.sin(Rl.time) * 300) + 150 + 50
+    #MovingHitbox1.rec.x = (Math.sin(Rl.time) * 300) + 250 + 50
+    #MovingHitbox2.rec.x = (Math.sin(Rl.time) * 300) + 150 + 50
 
     player = FECS::Cmp::Player.first.entity
     player_hitbox = player.component[FECS::Cmp::Hitbox]

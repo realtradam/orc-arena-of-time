@@ -9,8 +9,8 @@ level0 = {
   player_spawn: Rl::Vector2.new(120,300),
   scissor_size: Path.new(
     lambda do |time|
-      [300,
-       300]
+      [250,
+       250]
     end
   ),
   scissor_path: Path.new(
@@ -75,16 +75,19 @@ FECS::Sys.new('ConstructLevel') do
   player_ent.component[FECS::Cmp::Player].moved = false
 
   FECS::Cmp::ScissorTime.first.time = 0
-  # use current_level component to know which level from levels array to load
-  # create entities e.g. walls
-  # set properties for scissor box
-  # set properties for end goal zone
-  # move player to start
 end
 
 FECS::Sys.new('DestroyLevel') do
-  # delete all level specific entities and their components
-  # dont delete entities that carry over to next level
+  FECS::Cmp::Hitbox.reverse_each do |hitbox_cmp|
+    unless hitbox_cmp.entities.empty?
+      next if hitbox_cmp.entity.equal? @player
+    end
+    hitbox_cmp.delete
+  end
+  
+  FECS::Cmp::DamageHitbox.reverse_each do |hitbox_cmp|
+    hitbox_cmp.delete
+  end
 end
 
 # changing the level will destroy the current level and set up the next one
