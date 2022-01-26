@@ -42,10 +42,10 @@ FECS::Cmp.new('ScissorBox',
 FECS::Cmp.new('ScissorTime',
               :time)
 FECS::Cmp.new('DamageHitbox',
-             :rec,
-             damage: 1,
-             offset_x: 0,
-             offset_y: 0)
+              :rec,
+              damage: 1,
+              offset_x: 0,
+              offset_y: 0)
 FECS::Cmp.new('EndGoal', :rec)
 
 #ScissorPath = Path.new(
@@ -63,7 +63,7 @@ Input = FECS::Cmp::Input.new
 lancelot = Tileset.new(texture: Rl::Texture.new('./assets/lancelot_.png'))
 
 FECS::Cmp::Sprite.new(
-  texture: Rl::Texture.new('./assets/map1.png'),
+  texture: Rl::Texture.new('./assets/mapinit.png'),
   source_rec: Rl::Rectangle.new(0,0,448,336),
   dest_rec: Rl::Rectangle.new(0,0,448*2,336*2)
 )
@@ -123,9 +123,10 @@ Player = FECS::Ent.new(
     max_speed: 400,
   ),
   FECS::Cmp::Hitbox.new(
-    rec: Rl::Rectangle.new(0,0,16*2,20*2),
+    #rec: Rl::Rectangle.new(0,0,16*2,20*2),
+    rec: Rl::Rectangle.new(0,0,16*2,10*2),
     offset_x: 4*2,
-    offset_y: 4*2
+    offset_y: 14*2
   ),
 )
 
@@ -367,8 +368,14 @@ FECS::Scn::Play.add(
   FECS::Sys.new('Scissor') do
     player_ent = FECS::Cmp::Player.first.entity
     if player_ent.component[FECS::Cmp::Player].moved
-      FECS::Cmp::ScissorTime.first.time += Rl.frame_time * 1/8
-      FECS::Cmp::ScissorTime.first.time %= 1
+      if FECS::Cmp::ScissorTime.first.time < Levels[CurrentLevel.level][:scissor_path].paths.length - 0.00001
+        FECS::Cmp::ScissorTime.first.time += Rl.frame_time * Levels[CurrentLevel.level][:scissor_speed][FECS::Cmp::ScissorTime.first.time.to_i]
+        if FECS::Cmp::ScissorTime.first.time >= Levels[CurrentLevel.level][:scissor_path].paths.length - 0.00001
+          FECS::Cmp::ScissorTime.first.time = Levels[CurrentLevel.level][:scissor_path].paths.length - 0.00001
+        end
+      else
+        FECS::Cmp::ScissorTime.first.time = Levels[CurrentLevel.level][:scissor_path].paths.length - 0.00001
+      end
     end
   end,
   FECS::Sys.new('Render') do
@@ -421,24 +428,26 @@ FECS::Scn::Play.add(
   FelECS::Sys.new('DebugRenderHitbox') do
     scissor_path = Levels[CurrentLevel.level][:scissor_path].call(FECS::Cmp::ScissorTime.first.time)
     scissor_size = Levels[CurrentLevel.level][:scissor_size].call(FECS::Cmp::ScissorTime.first.time)
-    Rl.scissor_mode(
-      x: scissor_path[0],
-      y: scissor_path[1],
-      width: scissor_size[0],
-      height: scissor_size[1]) do
-        FECS::Cmp::Hitbox.each do |hitbox|
-          #hitbox.rec.draw(color: BLACK)
-          hitbox.rec.draw_lines(line_thick: 2, color: BLUE)
+    if Input.show_debug
+      Rl.scissor_mode(
+        x: scissor_path[0],
+        y: scissor_path[1],
+        width: scissor_size[0],
+        height: scissor_size[1]) do
+          FECS::Cmp::Hitbox.each do |hitbox|
+            #hitbox.rec.draw(color: BLACK)
+            hitbox.rec.draw_lines(line_thick: 2, color: BLUE)
+          end
         end
+    end
+    if Input.show_debug
+      faded_blue = Rl::Color.new(0,121,241,30)
+      FECS::Cmp::Hitbox.each do |hitbox|
+        #hitbox.rec.draw(color: BLACK)
+        hitbox.rec.draw_lines(line_thick: 2, color: faded_blue)
       end
-      if Input.show_debug
-        faded_blue = Rl::Color.new(0,121,241,30)
-        FECS::Cmp::Hitbox.each do |hitbox|
-          #hitbox.rec.draw(color: BLACK)
-          hitbox.rec.draw_lines(line_thick: 2, color: faded_blue)
-        end
-      end
-      Rl::Rectangle.new(scissor_path[0], scissor_path[1], scissor_size[0], scissor_size[1]).draw_lines(line_thick: 3, color: RED)
+    end
+    Rl::Rectangle.new(scissor_path[0]-1, scissor_path[1]-1, scissor_size[0]+1, scissor_size[1]+1).draw_lines(line_thick: 3, color: RED)
   end
 )
 
