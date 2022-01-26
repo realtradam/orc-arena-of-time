@@ -46,6 +46,7 @@ FECS::Cmp.new('DamageHitbox',
              damage: 1,
              offset_x: 0,
              offset_y: 0)
+FECS::Cmp.new('EndGoal', :rec)
 
 #ScissorPath = Path.new(
 #  lambda do |time|
@@ -56,7 +57,7 @@ FECS::Cmp.new('DamageHitbox',
 
 #FECS::Cmp::ScissorBox.new(rec: Rl::Rectangle.new(200,200,250,250))
 FECS::Cmp::ScissorTime.new(time: 0)
-
+EndGoal = FECS::Cmp::EndGoal.new
 Input = FECS::Cmp::Input.new
 
 lancelot = Tileset.new(texture: Rl::Texture.new('./assets/lancelot_.png'))
@@ -104,7 +105,7 @@ FECS::Cmp::Hitbox.new(
 =end
 
 
-@player = FECS::Ent.new(
+Player = FECS::Ent.new(
   FECS::Cmp::Player.new,
   FECS::Cmp::Hp.new(value: 100, max_invincible_time: 2),
   FECS::Cmp::Position.new(x: 120, y: 300),
@@ -335,6 +336,12 @@ FECS::Scn::Play.add(
         hitbox.rec.x = position_cmp.x + hitbox.offset_x
         hitbox.rec.y = position_cmp.y + hitbox.offset_y
       end
+    end
+  end,
+  FECS::Sys.new('CheckEndGoal') do
+    player_hitbox = Player.component[FECS::Cmp::Hitbox].rec
+    if EndGoal.rec.collide_with_rec? player_hitbox
+      puts 'you\'re winner'
     end
   end,
   FECS::Sys.new('ShowSpeed') do

@@ -19,7 +19,7 @@ level0 = {
        Math.bezier([200, 1183, 200, 200],time)-150]
     end
   ),
-  end_goal: Rl::Rectangle.new(40,40,10,10),
+  end_goal: [40,40,10,10],
   walls: [
     [250,250, 250,150], 
     [350,200, 050,350], 
@@ -63,16 +63,22 @@ FECS::Sys.new('ConstructLevel') do
     )
   end
 
-  player_ent = FECS::Cmp::Player.first.entity
-  player_pos = player_ent.component[FECS::Cmp::Position]
-  player_vel = player_ent.component[FECS::Cmp::Velocity]
+  EndGoal.rec = Rl::Rectangle.new(
+    level[:end_goal][0],
+    level[:end_goal][1],
+    level[:end_goal][2],
+    level[:end_goal][3],
+  )
+
+  player_pos = Player.component[FECS::Cmp::Position]
+  player_vel = Player.component[FECS::Cmp::Velocity]
 
   player_pos.x = level[:player_spawn].x
   player_pos.y = level[:player_spawn].y
   player_vel.x = 0
   player_vel.y = 0
 
-  player_ent.component[FECS::Cmp::Player].moved = false
+  Player.component[FECS::Cmp::Player].moved = false
 
   FECS::Cmp::ScissorTime.first.time = 0
 end
@@ -80,7 +86,7 @@ end
 FECS::Sys.new('DestroyLevel') do
   FECS::Cmp::Hitbox.reverse_each do |hitbox_cmp|
     unless hitbox_cmp.entities.empty?
-      next if hitbox_cmp.entity.equal? @player
+      next if hitbox_cmp.entity.equal? Player
     end
     hitbox_cmp.delete
   end
