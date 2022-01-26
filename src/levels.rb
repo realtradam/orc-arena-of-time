@@ -63,13 +63,18 @@ FECS::Sys.new('ConstructLevel') do
     )
   end
 
-  player_pos = @player.component[FECS::Cmp::Position]
-  player_vel = @player.component[FECS::Cmp::Velocity]
+  player_ent = FECS::Cmp::Player.first.entity
+  player_pos = player_ent.component[FECS::Cmp::Position]
+  player_vel = player_ent.component[FECS::Cmp::Velocity]
 
   player_pos.x = level[:player_spawn].x
   player_pos.y = level[:player_spawn].y
   player_vel.x = 0
   player_vel.y = 0
+
+  player_ent.component[FECS::Cmp::Player].moved = false
+
+  FECS::Cmp::ScissorTime.first.time = 0
   # use current_level component to know which level from levels array to load
   # create entities e.g. walls
   # set properties for scissor box
