@@ -24,9 +24,14 @@ level0 = {
     [250,250, 250,150], 
     [350,200, 050,350], 
     [070,470, 200,200], 
-    [350,200, 050,350], 
-    [470,470, 200,020]
+    [470,470, 200,020],
   ],
+  damage_areas: [
+    [10, 0,0, 100,100],
+  ],
+  damage_walls: [
+    [10, 350,200, 050,350], 
+  ]
 }
 
 Levels.push(level0)
@@ -42,7 +47,29 @@ FECS::Sys.new('ConstructLevel') do
       offset_y: 0
     )
   end
+  level[:damage_areas].each do |dmg|
+    FECS::Cmp::DamageHitbox.new(
+      rec: Rl::Rectangle.new(*dmg[1..]),
+      damage: dmg[0],
+    )
+  end
+  level[:damage_walls].each do |dmg|
+    FECS::Cmp::DamageHitbox.new(
+      rec: Rl::Rectangle.new(dmg[1]-1, dmg[2]-1, dmg[3]+2, dmg[4]+2),
+      damage: dmg[0],
+    )
+    FECS::Cmp::Hitbox.new(
+      rec: Rl::Rectangle.new(*dmg[1..]),
+    )
+  end
 
+  player_pos = @player.component[FECS::Cmp::Position]
+  player_vel = @player.component[FECS::Cmp::Velocity]
+
+  player_pos.x = level[:player_spawn].x
+  player_pos.y = level[:player_spawn].y
+  player_vel.x = 0
+  player_vel.y = 0
   # use current_level component to know which level from levels array to load
   # create entities e.g. walls
   # set properties for scissor box
