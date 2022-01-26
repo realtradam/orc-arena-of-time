@@ -19,31 +19,32 @@ level0 = {
   ),
   scissor_path: Path.new(
     lambda do |time|
-      xstart = 492
-      ystart = 353
-      xstartnode = 786
-      ystartnode = 374
-      xendnode = 763
-      yendnode = 373
-      xend = 787
-      yend = 142
-      [Math.bezier([xstart, xstartnode, xendnode, xend],time)-(250/2),
-       Math.bezier([ystart, ystartnode, yendnode, yend],time)-(250/2)]
+      xstart = 494
+      ystart = 355
+      xstartnode = 827
+      ystartnode = 431
+      xendnode = 816
+      yendnode = 354
+      xend = 758
+      yend = 152
+      easeTime = 1 - Math.cos((time * Math::PI) / 2)
+      [Math.bezier([xstart, xstartnode, xendnode, xend],easeTime)-(250/2),
+       Math.bezier([ystart, ystartnode, yendnode, yend],easeTime)-(250/2)]
     end,
     lambda do |time|
-      xstart = 787
-      ystart = 142
-      xstartnode = -39
-      ystartnode = 1
-      xendnode = 174
-      yendnode = 465
-      xend = 276
-      yend = 569
+      xstart = 758
+      ystart = 152
+      xstartnode = -44
+      ystartnode = 56
+      xendnode = 128
+      yendnode = 556
+      xend = 289
+      yend = 533
       [Math.bezier([xstart, xstartnode, xendnode, xend],time)-(250/2),
        Math.bezier([ystart, ystartnode, yendnode, yend],time)-(250/2)]
     end
   ),
-  scissor_speed: [1.0/6.0, 1.0/10.0],
+  scissor_speed: [1.0/7.0, 1.0/11.0],
   end_goal: [40,40,10,10],
   walls: [
     [308,182,290,86],
