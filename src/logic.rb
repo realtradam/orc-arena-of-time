@@ -1,8 +1,7 @@
 FECS::Cmp.new('Player',
               moved: false,
               state: 'standing',
-              state_direction: 'right',
-              state_frame: 0)
+              state_direction: 'right')
 FECS::Cmp.new('Velocity',
               x: 0,
               y: 0)
@@ -84,6 +83,7 @@ PlayerAnimations = {
   standing_left: [], standing_right:[],
   running_left: [], running_right:[],
   turning_right: [], turning_left:[],
+  damage_left: [], damage_right:[],
 }
   #lancelot.frames.push Rl::Rectangle.new((24 * x), 24*2, 24, 24)
 4.times do |x|
@@ -96,14 +96,21 @@ end
   PlayerAnimations[:standing_right].push Rl::Rectangle.new((24 * x), 24*0, 24, 24)
 end
 4.times do |x|
-  PlayerAnimations[:standing_left].unshift Rl::Rectangle.new((24 * x) + 24*4, 24*0, 24, 24)
+  PlayerAnimations[:standing_left].push Rl::Rectangle.new((24 * x) + 24*4, 24*0, 24, 24)
 end
 4.times do |x|
   PlayerAnimations[:running_right].push Rl::Rectangle.new((24 * x), 24*2, 24, 24)
 end
 4.times do |x|
-  PlayerAnimations[:running_left].unshift Rl::Rectangle.new((24 * x) + 24*4, 24*2, 24, 24)
+  PlayerAnimations[:running_left].push Rl::Rectangle.new((24 * x) + 24*4, 24*2, 24, 24)
 end
+4.times do |x|
+  PlayerAnimations[:damage_right].push Rl::Rectangle.new((24 * x), 24*4, 24, 24)
+end
+4.times do |x|
+  PlayerAnimations[:damage_left].push Rl::Rectangle.new((24 * x) + 24*4, 24*4, 24, 24)
+end
+
 PlayerTileset.frames = PlayerAnimations[:standing_right]
 
 FECS::Cmp::Sprite.new(
@@ -198,21 +205,23 @@ FECS::Scn::Play.add(
     input_x = 0
     input_y = 0
     movement_cmp = ent.component[FECS::Cmp::Movement]
-    if Input.move_up
-      input_y -= 1.0
-      ent.component[FECS::Cmp::Player].moved = true
-    end
-    if Input.move_down
-      input_y += 1.0
-      ent.component[FECS::Cmp::Player].moved = true
-    end
-    if Input.move_left
-      input_x -= 1.0
-      ent.component[FECS::Cmp::Player].moved = true
-    end
-    if Input.move_right
-      input_x += 1.0
-      ent.component[FECS::Cmp::Player].moved = true
+    unless FECS::Cmp::Player.first.state == 'damaged'
+      if Input.move_up
+        input_y -= 1.0
+        ent.component[FECS::Cmp::Player].moved = true
+      end
+      if Input.move_down
+        input_y += 1.0
+        ent.component[FECS::Cmp::Player].moved = true
+      end
+      if Input.move_left
+        input_x -= 1.0
+        ent.component[FECS::Cmp::Player].moved = true
+      end
+      if Input.move_right
+        input_x += 1.0
+        ent.component[FECS::Cmp::Player].moved = true
+      end
     end
     # Normalize input
     input_mag = Math.sqrt((input_x**2) + (input_y**2))
@@ -351,6 +360,7 @@ FECS::Scn::Play.add(
       if Rl::Rectangle.new(scissor_path[0], scissor_path[1], scissor_size[0], scissor_size[1]).collide_with_rec?(player_hitbox.rec)
         FECS::Cmp::DamageHitbox.each do |dmg_hitbox|
           if player_hitbox.rec.collide_with_rec?(dmg_hitbox.rec) 
+        FECS::Cmp::Player.first.state = 'set_damaged'
             hp_cmp.value -= dmg_hitbox.damage
             hp_cmp.invincible_timer = hp_cmp.max_invincible_time
             puts "oof -#{dmg_hitbox.damage} hp"
@@ -362,6 +372,7 @@ FECS::Scn::Play.add(
           end
         end
       else
+        FECS::Cmp::Player.first.state = 'set_damaged'
         hp_cmp.value -= 1
         hp_cmp.invincible_timer = hp_cmp.max_invincible_time
         puts "oof -#{1} hp"
@@ -380,9 +391,43 @@ FECS::Scn::Play.add(
     x_vel = ent.component[FECS::Cmp::Velocity].x
     velocity_mag = Math.sqrt((x_vel**2) + (y_vel**2))
     # if took damaged
+    if player.state == 'set_damaged'
+      player.state = 'damaged'
+      PlayerTileset.frame = 0
+      if player.state_direction == 'right'
+        PlayerTileset.frames = PlayerAnimations[:damage_right]
+      else
+        PlayerTileset.frames = PlayerAnimations[:damage_left]
+      end
+      movement = ent.component[FECS::Cmp::Movement]
+      unless y_vel.zero?
+      ent.component[FECS::Cmp::Velocity].y = -(y_vel / velocity_mag) * (movement.max_speed)
+      end
+      unless x_vel.zero?
+      ent.component[FECS::Cmp::Velocity].x = -(x_vel / velocity_mag) * (movement.max_speed)
+      end
+    end
     if player.state == 'damaged'
-      #
-      # else
+      iter_speed = 8
+      if tileset_cmp.tileset.frame + (iter_speed * Rl.frame_time) > PlayerTileset.frames.length
+        if player.state_direction == 'right'
+          #       change to standing
+          player.state = 'standing'
+          PlayerTileset.frames = PlayerAnimations[:standing_right]
+        else
+          #       change to standing
+          player.state = 'standing'
+          PlayerTileset.frames = PlayerAnimations[:standing_left]
+        end
+        #       reset frame
+        PlayerTileset.frame = 0
+        #     else
+      else
+        #       increment
+        tileset_cmp.tileset.step(iter_speed * Rl.frame_time)
+        #     end
+      end
+
     else
       #   if velocity opposite of direction
       if ((x_vel.positive?) && (player.state_direction == 'left')) || ((x_vel.negative?) && (player.state_direction == 'right'))
@@ -552,8 +597,6 @@ FECS::Scn::Play.add(
     end
   end,
   FECS::Sys.new('Render') do
-    #scissor_path = Levels[CurrentLevel.level][:scissor_path].call((Rl.time/8) % 1)
-    #scissor_size = Levels[CurrentLevel.level][:scissor_size].call((Rl.time/8) % 1)
     scissor_path = Levels[CurrentLevel.level][:scissor_path].call(FECS::Cmp::ScissorTime.first.time)
     scissor_size = Levels[CurrentLevel.level][:scissor_size].call(FECS::Cmp::ScissorTime.first.time)
     Rl::Rectangle.new(scissor_path[0], scissor_path[1], scissor_size[0], scissor_size[1]).draw(color: Rl::Color.new(52,52,64,255))
@@ -561,6 +604,14 @@ FECS::Scn::Play.add(
     y_vel = player.component[FECS::Cmp::Velocity].y.abs
     x_vel = player.component[FECS::Cmp::Velocity].x.abs
     vel = Math.sqrt(x_vel**2 + y_vel**2)
+    FECS::Cmp::Tileset.each do |sprite_cmp|
+      Rl.draw_texture_pro(texture: sprite_cmp.tileset.texture,
+                          origin: sprite_cmp.origin,
+                          source_rec: sprite_cmp.tileset.rec,
+                          dest_rec: sprite_cmp.dest_rec,
+                          tint: Rl::Color.new(255,255,255,100),
+                          rotation: sprite_cmp.rotation)
+    end
     Rl.scissor_mode(
       x: scissor_path[0],
       y: scissor_path[1],
@@ -637,8 +688,8 @@ CurrentLevel.level = 0
 FelECS::Order.sort(
   FECS::Sys::PlayerInput,
   FECS::Sys::PlayerMovement,
-  FECS::Sys::Walls,
   FECS::Sys::Damage,
+  FECS::Sys::Walls,
   FECS::Sys::Movement,
   FECS::Sys::AnimationStateMachine,
   FECS::Sys::ApplyPositionToSprite,
