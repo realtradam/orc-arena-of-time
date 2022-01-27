@@ -1,4 +1,8 @@
-FECS::Cmp.new('Player', moved: false)
+FECS::Cmp.new('Player',
+              moved: false,
+              state: 'standing',
+              state_direction: 'right',
+              state_frame: 0)
 FECS::Cmp.new('Velocity',
               x: 0,
               y: 0)
@@ -22,6 +26,13 @@ FECS::Cmp.new('Tileset',
               :dest_rec,
               :rotation,
               :tint)
+FECS::Cmp.new('OverhangTexture',
+              :texture,
+              :origin,
+              :source_rec,
+              :dest_rec,
+              :rotation,
+              :tint)
 FECS::Cmp.new('Hitbox',
               :rec,
               offset_x: 0,
@@ -41,6 +52,14 @@ FECS::Cmp.new('ScissorBox',
               :rec)
 FECS::Cmp.new('ScissorTime',
               :time)
+FECS::Cmp.new('TimedRender',
+              :path,
+              :texture,
+              :origin,
+              :source_rec,
+              :dest_rec,
+              :rotation,
+              :tint)
 FECS::Cmp.new('DamageHitbox',
               :rec,
               damage: 1,
@@ -60,7 +79,25 @@ FECS::Cmp::ScissorTime.new(time: 0)
 EndGoal = FECS::Cmp::EndGoal.new
 Input = FECS::Cmp::Input.new
 
-lancelot = Tileset.new(texture: Rl::Texture.new('./assets/lancelot_.png'))
+PlayerTileset = Tileset.new(texture: Rl::Texture.new('./assets/lancelot_.png'))
+PlayerAnimations = {
+  standing_left: [], standing_right:[],
+  running_left: [], running_right:[],
+}
+  #lancelot.frames.push Rl::Rectangle.new((24 * x), 24*2, 24, 24)
+4.times do |x|
+  PlayerAnimations[:standing_right].push Rl::Rectangle.new((24 * x), 24*0, 24, 24)
+end
+4.times do |x|
+  PlayerAnimations[:standing_left].unshift Rl::Rectangle.new((24 * x) + 24*4, 24*0, 24, 24)
+end
+4.times do |x|
+  PlayerAnimations[:running_right].push Rl::Rectangle.new((24 * x), 24*2, 24, 24)
+end
+4.times do |x|
+  PlayerAnimations[:running_left].unshift Rl::Rectangle.new((24 * x) + 24*4, 24*2, 24, 24)
+end
+PlayerTileset.frames = PlayerAnimations[:standing_right]
 
 FECS::Cmp::Sprite.new(
   texture: Rl::Texture.new('./assets/mapinit.png'),
@@ -68,9 +105,12 @@ FECS::Cmp::Sprite.new(
   dest_rec: Rl::Rectangle.new(0,0,448*2,336*2)
 )
 
-4.times do |x|
-  lancelot.frames.push Rl::Rectangle.new((24 * x), 24*2, 24, 24)
-end
+FECS::Cmp::OverhangTexture.new(
+  texture: Rl::Texture.new('./assets/mapinit-overhang.png'),
+  source_rec: Rl::Rectangle.new(0,0,140,220),
+  dest_rec: Rl::Rectangle.new(0,0,140*2,220*2)
+)
+
 =begin
 MovingHitbox1 = FECS::Cmp::Hitbox.new(
   rec: Rl::Rectangle.new(150,50,35,150),
@@ -111,7 +151,7 @@ Player = FECS::Ent.new(
   FECS::Cmp::Position.new(x: 120, y: 300),
   FECS::Cmp::Velocity.new,
   FECS::Cmp::Tileset.new(
-    tileset: lancelot,
+    tileset: PlayerTileset,
     dest_rec: Rl::Rectangle.new(0,0,24*2,24*2),
     origin: Rl::Vector2.new(0,0),
     tint: Rl::Color.new(255,255,255,255),
@@ -312,6 +352,68 @@ FECS::Scn::Play.add(
       end
     end
   end,
+  FECS::Sys.new('AnimationStateMachine') do
+    player = FECS::Cmp::Player.first
+    ent = player.entity
+    tileset_cmp = ent.component[FECS::Cmp::Tileset]
+    y_vel = ent.component[FECS::Cmp::Velocity].y
+    x_vel = ent.component[FECS::Cmp::Velocity].x
+    velocity_mag = Math.sqrt((x_vel**2) + (y_vel**2))
+    #sprite.tileset.step((velocity_mag*0.04) * Rl.frame_time)
+    # if took damaged
+      puts player.state
+      puts velocity_mag
+    if player.state.equal? 'damaged'
+      #
+      # else
+    else
+      #   if velocity opposite of direction
+      if false
+        #     change to changing_direction
+        #     reset frame
+        #   elsif changing direction
+      elsif false
+        #     if reached end of frames
+        #       change to standing
+        #       reset frame
+        #     else
+        #       increment
+        #     end
+        #   elsif standing
+      elsif player.state == 'standing'
+        #     if velocity
+        if velocity_mag >= 0.1
+          #       change to running
+          player.state = 'running'
+          PlayerTileset.frames = PlayerAnimations[:running_right]
+          state_frame = 0
+          #     else
+        else
+          #       increment frame
+          #player.state_frame += 
+          tileset_cmp.tileset.step(5.0 * Rl.frame_time)
+          #player.state_frame %= tileset.frames.length
+          #     end
+        end
+        #   elsif running
+      elsif player.state == 'running'
+        #     if no velocity
+        if velocity_mag < 0.1
+        #       change to standing
+          player.state = 'standing'
+          PlayerTileset.frames = PlayerAnimations[:standing_right]
+          state_frame = 0
+        #     else
+        else
+        #       increment frame
+          tileset_cmp.tileset.step((velocity_mag*0.04) * Rl.frame_time)
+        #     end
+        end
+        #   end
+      end
+      # end
+    end
+  end,
   FECS::Sys.new('Movement') do
     FECS::Cmp::Velocity.each do |velocity_cmp|
       ent = velocity_cmp.entity
@@ -327,10 +429,6 @@ FECS::Scn::Play.add(
       ent = position_cmp.entity
       sprite = ent.component[FECS::Cmp::Tileset]
       hitbox = ent.component[FECS::Cmp::Hitbox]
-      y_vel = ent.component[FECS::Cmp::Velocity].y
-      x_vel = ent.component[FECS::Cmp::Velocity].x
-      velocity_mag = Math.sqrt((x_vel**2) + (y_vel**2))
-      sprite.tileset.step((velocity_mag*0.04) * Rl.frame_time)
       if sprite
         sprite.dest_rec.x = position_cmp.x
         sprite.dest_rec.y = position_cmp.y
@@ -363,6 +461,7 @@ FECS::Scn::Play.add(
       Rl.draw_text(text: "fps: #{Rl.fps}", x: 10, y: 40, font_size: 30, color: WHITE)
       Rl.draw_text(text: "mouse x: #{Rl.mouse_x}", x: 10, y: 70, font_size: 30, color: WHITE)
       Rl.draw_text(text: "mouse y: #{Rl.mouse_y}", x: 10, y: 100, font_size: 30, color: WHITE)
+      Rl.draw_text(text: "path time: #{"%.2f" % FECS::Cmp::ScissorTime.first.time}", x: 10, y: 130, font_size: 30, color: WHITE)
     end
   end,
   FECS::Sys.new('Scissor') do
@@ -375,6 +474,28 @@ FECS::Scn::Play.add(
         end
       else
         FECS::Cmp::ScissorTime.first.time = Levels[CurrentLevel.level][:scissor_path].paths.length - 0.00001
+      end
+    end
+  end,
+  FECS::Sys.new('TimedRender') do
+    # check level > timed_render
+    # if it is time > check if texture exists
+    #   create if not
+    # end
+    # render it
+    level = Levels[CurrentLevel.level]
+    time = FECS::Cmp::ScissorTime.first.time
+    level[:timed_render].each do |timed_render|
+      if time >= timed_render[:time_start]
+        if (time < timed_render[:time_end]) || (timed_render[:time_end] < 0)
+          result = FECS::Cmp::TimedRender.find do |n|
+            n.path.equal? timed_render[:path]
+          end
+          Rl.draw_texture_pro(texture: result.texture,
+                              origin: Rl::Vector2.new(0,0),
+                              source_rec: result.source_rec,
+                              dest_rec: result.dest_rec)
+        end
       end
     end
   end,
@@ -393,12 +514,6 @@ FECS::Scn::Play.add(
       y: scissor_path[1],
       width: scissor_size[0],
       height: scissor_size[1]) do
-        if Input.show_debug
-          Rl.draw_text(text: "speed: #{"%.1f" % vel}", x: 10, y: 10, font_size: 30, color: BLACK)
-          Rl.draw_text(text: "fps: #{Rl.fps}", x: 10, y: 40, font_size: 30, color: BLACK)
-          Rl.draw_text(text: "mouse x: #{Rl.mouse_x}", x: 10, y: 70, font_size: 30, color: BLACK)
-          Rl.draw_text(text: "mouse y: #{Rl.mouse_y}", x: 10, y: 100, font_size: 30, color: BLACK)
-        end
         FECS::Cmp::Sprite.each do |sprite_cmp|
           Rl.draw_texture_pro(texture: sprite_cmp.texture,
                               origin: Rl::Vector2.new(0,0),
@@ -412,6 +527,20 @@ FECS::Scn::Play.add(
                               dest_rec: sprite_cmp.dest_rec,
                               tint: sprite_cmp.tint,
                               rotation: sprite_cmp.rotation)
+        end
+        FECS::Cmp::OverhangTexture.each do |sprite_cmp|
+          Rl.draw_texture_pro(texture: sprite_cmp.texture,
+                              origin: Rl::Vector2.new(0,0),
+                              source_rec: sprite_cmp.source_rec,
+                              dest_rec: sprite_cmp.dest_rec)
+
+        end
+        if Input.show_debug
+          Rl.draw_text(text: "speed: #{"%.1f" % vel}", x: 10, y: 10, font_size: 30, color: BLACK)
+          Rl.draw_text(text: "fps: #{Rl.fps}", x: 10, y: 40, font_size: 30, color: BLACK)
+          Rl.draw_text(text: "mouse x: #{Rl.mouse_x}", x: 10, y: 70, font_size: 30, color: BLACK)
+          Rl.draw_text(text: "mouse y: #{Rl.mouse_y}", x: 10, y: 100, font_size: 30, color: BLACK)
+          Rl.draw_text(text: "path time: #{"%.2f" % FECS::Cmp::ScissorTime.first.time}", x: 10, y: 130, font_size: 30, color: BLACK)
         end
       end
       if Input.show_debug
@@ -457,9 +586,16 @@ FelECS::Order.sort(
   FECS::Sys::PlayerInput,
   FECS::Sys::PlayerMovement,
   FECS::Sys::Walls,
+  FECS::Sys::Damage,
   FECS::Sys::Movement,
+  FECS::Sys::AnimationStateMachine,
   FECS::Sys::ApplyPositionToSprite,
+  # Render debug text
   FECS::Sys::ShowSpeed,
+  # Renders things for levels outside of scissor
+  FECS::Sys::TimedRender,
+  # Renders any other game element
   FECS::Sys::Render,
+  # Renders the debug hitboxes
   FECS::Sys::DebugRenderHitbox,
 )

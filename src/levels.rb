@@ -45,7 +45,30 @@ level0 = {
     end
   ),
   scissor_speed: [1.0/7.0, 1.0/11.0],
-  end_goal: [40,40,10,10],
+  timed_render: [
+    {
+      path: './assets/mapinit-wasd.png',
+      time_start: 0,
+      time_end: -1,
+      source_rec: Rl::Rectangle.new(0,0,284,204),
+      dest_rec: Rl::Rectangle.new(0,0,284*2,204*2),
+    },
+    {
+      path: './assets/mapinit-inside.png',
+      time_start: 0.7,
+      time_end: -1,
+      source_rec: Rl::Rectangle.new(0,0,421,190),
+      dest_rec: Rl::Rectangle.new(0,0,421*2,190*2),
+    },
+    {
+      path: './assets/mapinit-ladder.png',
+      time_start: 1.3,
+      time_end: -1,
+      source_rec: Rl::Rectangle.new(0,0,192,81),
+      dest_rec: Rl::Rectangle.new(0,0,192*2,81*2),
+    },
+  ],
+  end_goal: [160*2,272*2,16*2,16*2],
   walls: [
     [308,182,290,86],
     [598,182,118,124],
@@ -110,6 +133,17 @@ FECS::Sys.new('ConstructLevel') do
       rec: Rl::Rectangle.new(*dmg[1..]),
     )
   end
+  level[:timed_render].each do |rndr|
+    FECS::Cmp::TimedRender.new(
+      path: rndr[:path],
+      texture: Rl::Texture.new(rndr[:path]),
+      origin: Rl::Vector2.new(0,0),
+      source_rec: rndr[:source_rec],
+      dest_rec: rndr[:dest_rec],
+      rotation: 0,
+      tint: RED
+    )
+  end
 
   EndGoal.rec = Rl::Rectangle.new(
     level[:end_goal][0],
@@ -141,6 +175,10 @@ FECS::Sys.new('DestroyLevel') do
 
   FECS::Cmp::DamageHitbox.reverse_each do |hitbox_cmp|
     hitbox_cmp.delete
+  end
+
+  FECS::Cmp::TimedRender.reverse_each do |timedrender_cmp|
+    timedrender_cmp.delete
   end
 end
 
