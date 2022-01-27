@@ -78,14 +78,27 @@ FECS::Cmp::ScissorTime.new(time: 0)
 EndGoal = FECS::Cmp::EndGoal.new
 Input = FECS::Cmp::Input.new
 
-PlayerTileset = Tileset.new(texture: Rl::Texture.new('./assets/lancelot_.png'))
+OrcTextures = [
+  Rl::Texture.new('./assets/orc_.png'),
+  Rl::Texture.new('./assets/orc_two.png'),
+  Rl::Texture.new('./assets/orc_three.png'),
+  Rl::Texture.new('./assets/orc_four.png'),
+]
+PlayerTileset = Tileset.new(texture: OrcTextures[3])
 PlayerAnimations = {
   standing_left: [], standing_right:[],
   running_left: [], running_right:[],
   turning_right: [], turning_left:[],
   damage_left: [], damage_right:[],
+  dead_left: [], dead_right:[],
 }
-  #lancelot.frames.push Rl::Rectangle.new((24 * x), 24*2, 24, 24)
+#lancelot.frames.push Rl::Rectangle.new((24 * x), 24*2, 24, 24)
+4.times do |x|
+  PlayerAnimations[:dead_right].push Rl::Rectangle.new((24 * x), 24*5, 24, 24)
+end
+4.times do |x|
+  PlayerAnimations[:dead_left].push Rl::Rectangle.new((24 * x) + 24*4, 24*5, 24, 24)
+end
 4.times do |x|
   PlayerAnimations[:turning_left].push Rl::Rectangle.new((24 * x), 24*3, 24, 24)
 end
@@ -161,7 +174,7 @@ FECS::Cmp::Hitbox.new(
 
 Player = FECS::Ent.new(
   FECS::Cmp::Player.new,
-  FECS::Cmp::Hp.new(value: 100, max_invincible_time: 2),
+  FECS::Cmp::Hp.new(value: 4, max_invincible_time: 2),
   FECS::Cmp::Position.new(x: 120, y: 300),
   FECS::Cmp::Velocity.new,
   FECS::Cmp::Tileset.new(
@@ -205,7 +218,7 @@ FECS::Scn::Play.add(
     input_x = 0
     input_y = 0
     movement_cmp = ent.component[FECS::Cmp::Movement]
-    unless FECS::Cmp::Player.first.state == 'damaged'
+    unless (FECS::Cmp::Player.first.state == 'damaged') || (ent.component[FECS::Cmp::Hp].value <= 0)
       if Input.move_up
         input_y -= 1.0
         ent.component[FECS::Cmp::Player].moved = true
@@ -360,13 +373,14 @@ FECS::Scn::Play.add(
       if Rl::Rectangle.new(scissor_path[0], scissor_path[1], scissor_size[0], scissor_size[1]).collide_with_rec?(player_hitbox.rec)
         FECS::Cmp::DamageHitbox.each do |dmg_hitbox|
           if player_hitbox.rec.collide_with_rec?(dmg_hitbox.rec) 
-        FECS::Cmp::Player.first.state = 'set_damaged'
+            FECS::Cmp::Player.first.state = 'set_damaged'
             hp_cmp.value -= dmg_hitbox.damage
             hp_cmp.invincible_timer = hp_cmp.max_invincible_time
-            puts "oof -#{dmg_hitbox.damage} hp"
-            puts "hp: #{hp_cmp.value}"
+            #puts "oof -#{dmg_hitbox.damage} hp"
+            #puts "hp: #{hp_cmp.value}"
             if hp_cmp.value <= 0
-              puts 'ded'
+              FECS::Cmp::Player.first.state = 'set_dead'
+              #puts 'ded'
             end
             break
           end
@@ -375,10 +389,11 @@ FECS::Scn::Play.add(
         FECS::Cmp::Player.first.state = 'set_damaged'
         hp_cmp.value -= 1
         hp_cmp.invincible_timer = hp_cmp.max_invincible_time
-        puts "oof -#{1} hp"
-        puts "hp: #{hp_cmp.value}"
+        #puts "oof -#{1} hp"
+        #puts "hp: #{hp_cmp.value}"
         if hp_cmp.value <= 0
-          puts 'ded'
+          FECS::Cmp::Player.first.state = 'set_dead'
+          #puts 'ded'
         end
       end
     end
@@ -391,66 +406,62 @@ FECS::Scn::Play.add(
     x_vel = ent.component[FECS::Cmp::Velocity].x
     velocity_mag = Math.sqrt((x_vel**2) + (y_vel**2))
     # if took damaged
-    if player.state == 'set_damaged'
-      player.state = 'damaged'
-      PlayerTileset.frame = 0
+    if player.state == 'set_dead'
+      player.state = 'dead_damaged'
       if player.state_direction == 'right'
         PlayerTileset.frames = PlayerAnimations[:damage_right]
       else
         PlayerTileset.frames = PlayerAnimations[:damage_left]
       end
-      movement = ent.component[FECS::Cmp::Movement]
-      unless y_vel.zero?
-      ent.component[FECS::Cmp::Velocity].y = -(y_vel / velocity_mag) * (movement.max_speed)
-      end
-      unless x_vel.zero?
-      ent.component[FECS::Cmp::Velocity].x = -(x_vel / velocity_mag) * (movement.max_speed)
-      end
+        movement = ent.component[FECS::Cmp::Movement]
+        unless y_vel.zero?
+          ent.component[FECS::Cmp::Velocity].y = -(y_vel / velocity_mag) * (movement.max_speed)
+        end
+        unless x_vel.zero?
+          ent.component[FECS::Cmp::Velocity].x = -(x_vel / velocity_mag) * (movement.max_speed)
+        end
+      PlayerTileset.frame = 0
     end
-    if player.state == 'damaged'
-      iter_speed = 8
-      if tileset_cmp.tileset.frame + (iter_speed * Rl.frame_time) > PlayerTileset.frames.length
-        if player.state_direction == 'right'
-          #       change to standing
-          player.state = 'standing'
-          PlayerTileset.frames = PlayerAnimations[:standing_right]
-        else
-          #       change to standing
-          player.state = 'standing'
-          PlayerTileset.frames = PlayerAnimations[:standing_left]
-        end
-        #       reset frame
-        PlayerTileset.frame = 0
-        #     else
+    if player.state == 'dead_damaged'
+      anim_speed = 8
+      if tileset_cmp.tileset.frame + (anim_speed * Rl.frame_time) <= PlayerTileset.frames.length
+        PlayerTileset.step(anim_speed * Rl.frame_time)
       else
-        #       increment
-        tileset_cmp.tileset.step(iter_speed * Rl.frame_time)
-        #     end
-      end
-
-    else
-      #   if velocity opposite of direction
-      if ((x_vel.positive?) && (player.state_direction == 'left')) || ((x_vel.negative?) && (player.state_direction == 'right'))
-        #     change to changing_direction
-        if player.state == 'changing_direction'
-          PlayerTileset.frame = 1
-        else
-          player.state = 'changing_direction'
-          #     reset frame
-          PlayerTileset.frame = 0
-        end
         if player.state_direction == 'right'
-          player.state_direction = 'left'
-          PlayerTileset.frames = PlayerAnimations[:turning_left]
+          PlayerTileset.frames = PlayerAnimations[:dead_right]
         else
-          player.state_direction = 'right'
-          PlayerTileset.frames = PlayerAnimations[:turning_right]
+          PlayerTileset.frames = PlayerAnimations[:dead_left]
         end
-        #   elsif changing direction
-      elsif player.state == 'changing_direction'
-        #     if reached end of frames
-        turn_speed = 8
-        if tileset_cmp.tileset.frame + (turn_speed * Rl.frame_time) > PlayerTileset.frames.length
+        player.state = 'dead'
+        PlayerTileset.frame = 0
+      end
+    elsif player.state == 'dead'
+      anim_speed = 3
+      if tileset_cmp.tileset.frame + (anim_speed * Rl.frame_time) <= PlayerTileset.frames.length
+        PlayerTileset.step(anim_speed * Rl.frame_time)
+      else
+        PlayerTileset.frame = PlayerTileset.frames.length - 0.1
+      end
+    else
+      if player.state == 'set_damaged'
+        player.state = 'damaged'
+        PlayerTileset.frame = 0
+        if player.state_direction == 'right'
+          PlayerTileset.frames = PlayerAnimations[:damage_right]
+        else
+          PlayerTileset.frames = PlayerAnimations[:damage_left]
+        end
+        movement = ent.component[FECS::Cmp::Movement]
+        unless y_vel.zero?
+          ent.component[FECS::Cmp::Velocity].y = -(y_vel / velocity_mag) * (movement.max_speed)
+        end
+        unless x_vel.zero?
+          ent.component[FECS::Cmp::Velocity].x = -(x_vel / velocity_mag) * (movement.max_speed)
+        end
+      end
+      if player.state == 'damaged'
+        iter_speed = 8
+        if tileset_cmp.tileset.frame + (iter_speed * Rl.frame_time) > PlayerTileset.frames.length
           if player.state_direction == 'right'
             #       change to standing
             player.state = 'standing'
@@ -460,53 +471,103 @@ FECS::Scn::Play.add(
             player.state = 'standing'
             PlayerTileset.frames = PlayerAnimations[:standing_left]
           end
+          PlayerTileset.texture = OrcTextures[
+            [
+              [ent.component[FECS::Cmp::Hp].value - 1,
+               OrcTextures.length - 1
+              ].min,
+              0
+            ].max
+          ]
           #       reset frame
           PlayerTileset.frame = 0
           #     else
         else
           #       increment
-          tileset_cmp.tileset.step(turn_speed * Rl.frame_time)
+          tileset_cmp.tileset.step(iter_speed * Rl.frame_time)
           #     end
         end
-        #   elsif standing
-      elsif player.state == 'standing'
-        #     if velocity
-        if velocity_mag >= 0.1
-          #       change to running
-          player.state = 'running'
-          if player.state_direction == 'right'
-            PlayerTileset.frames = PlayerAnimations[:running_right]
+
+      else
+        #   if velocity opposite of direction
+        if ((x_vel.positive?) && (player.state_direction == 'left')) || ((x_vel.negative?) && (player.state_direction == 'right'))
+          #     change to changing_direction
+          if player.state == 'changing_direction'
+            PlayerTileset.frame = 1
           else
-            PlayerTileset.frames = PlayerAnimations[:running_left]
+            player.state = 'changing_direction'
+            #     reset frame
+            PlayerTileset.frame = 0
           end
-          PlayerTileset.frame = 0
-          #     else
-        else
-          #       increment frame
-          #player.state_frame += 
-          tileset_cmp.tileset.step(5.0 * Rl.frame_time)
-          #player.state_frame %= tileset.frames.length
-          #     end
-        end
-        #   elsif running
-      elsif player.state == 'running'
-        #     if no velocity
-        if velocity_mag < 0.1
-          #       change to standing
-          player.state = 'standing'
           if player.state_direction == 'right'
-            PlayerTileset.frames = PlayerAnimations[:standing_right]
+            player.state_direction = 'left'
+            PlayerTileset.frames = PlayerAnimations[:turning_left]
           else
-            PlayerTileset.frames = PlayerAnimations[:standing_left]
+            player.state_direction = 'right'
+            PlayerTileset.frames = PlayerAnimations[:turning_right]
           end
-          PlayerTileset.frame = 0
-          #     else
-        else
-          #       increment frame
-          tileset_cmp.tileset.step((velocity_mag*0.04) * Rl.frame_time)
-          #     end
+          #   elsif changing direction
+        elsif player.state == 'changing_direction'
+          #     if reached end of frames
+          turn_speed = 8
+          if tileset_cmp.tileset.frame + (turn_speed * Rl.frame_time) > PlayerTileset.frames.length
+            if player.state_direction == 'right'
+              #       change to standing
+              player.state = 'standing'
+              PlayerTileset.frames = PlayerAnimations[:standing_right]
+            else
+              #       change to standing
+              player.state = 'standing'
+              PlayerTileset.frames = PlayerAnimations[:standing_left]
+            end
+            #       reset frame
+            PlayerTileset.frame = 0
+            #     else
+          else
+            #       increment
+            tileset_cmp.tileset.step(turn_speed * Rl.frame_time)
+            #     end
+          end
+          #   elsif standing
+        elsif player.state == 'standing'
+          #     if velocity
+          if velocity_mag >= 0.1
+            #       change to running
+            player.state = 'running'
+            if player.state_direction == 'right'
+              PlayerTileset.frames = PlayerAnimations[:running_right]
+            else
+              PlayerTileset.frames = PlayerAnimations[:running_left]
+            end
+            PlayerTileset.frame = 0
+            #     else
+          else
+            #       increment frame
+            #player.state_frame += 
+            tileset_cmp.tileset.step(5.0 * Rl.frame_time)
+            #player.state_frame %= tileset.frames.length
+            #     end
+          end
+          #   elsif running
+        elsif player.state == 'running'
+          #     if no velocity
+          if velocity_mag < 0.1
+            #       change to standing
+            player.state = 'standing'
+            if player.state_direction == 'right'
+              PlayerTileset.frames = PlayerAnimations[:standing_right]
+            else
+              PlayerTileset.frames = PlayerAnimations[:standing_left]
+            end
+            PlayerTileset.frame = 0
+            #     else
+          else
+            #       increment frame
+            tileset_cmp.tileset.step((velocity_mag*0.04) * Rl.frame_time)
+            #     end
+          end
+          #   end
         end
-        #   end
       end
       # end
     end
