@@ -366,7 +366,6 @@ FECS::Scn::Play.add(
     y_vel = ent.component[FECS::Cmp::Velocity].y
     x_vel = ent.component[FECS::Cmp::Velocity].x
     velocity_mag = Math.sqrt((x_vel**2) + (y_vel**2))
-    #sprite.tileset.step((velocity_mag*0.04) * Rl.frame_time)
     # if took damaged
     if player.state == 'damaged'
       #
@@ -375,9 +374,13 @@ FECS::Scn::Play.add(
       #   if velocity opposite of direction
       if ((x_vel.positive?) && (player.state_direction == 'left')) || ((x_vel.negative?) && (player.state_direction == 'right'))
         #     change to changing_direction
+        if player.state == 'changing_direction'
+        PlayerTileset.frame = 1
+        else
         player.state = 'changing_direction'
         #     reset frame
         PlayerTileset.frame = 0
+        end
         if player.state_direction == 'right'
           player.state_direction = 'left'
           PlayerTileset.frames = PlayerAnimations[:turning_left]
