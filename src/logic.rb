@@ -345,13 +345,26 @@ FECS::Scn::Play.add(
     next if hp_cmp.value <= 0
     if hp_cmp.invincible_timer >= 0
       hp_cmp.invincible_timer -= Rl.frame_time
-    end
-    FECS::Cmp::DamageHitbox.each do |dmg_hitbox|
-      if player_hitbox.rec.collide_with_rec?(dmg_hitbox.rec) &&
-          hp_cmp.invincible_timer <= 0
-        hp_cmp.value -= dmg_hitbox.damage
+    else
+      scissor_path = Levels[CurrentLevel.level][:scissor_path].call(FECS::Cmp::ScissorTime.first.time)
+      scissor_size = Levels[CurrentLevel.level][:scissor_size].call(FECS::Cmp::ScissorTime.first.time)
+      if Rl::Rectangle.new(scissor_path[0], scissor_path[1], scissor_size[0], scissor_size[1]).collide_with_rec?(player_hitbox.rec)
+        FECS::Cmp::DamageHitbox.each do |dmg_hitbox|
+          if player_hitbox.rec.collide_with_rec?(dmg_hitbox.rec) 
+            hp_cmp.value -= dmg_hitbox.damage
+            hp_cmp.invincible_timer = hp_cmp.max_invincible_time
+            puts "oof -#{dmg_hitbox.damage} hp"
+            puts "hp: #{hp_cmp.value}"
+            if hp_cmp.value <= 0
+              puts 'ded'
+            end
+            break
+          end
+        end
+      else
+        hp_cmp.value -= 1
         hp_cmp.invincible_timer = hp_cmp.max_invincible_time
-        puts "oof -#{dmg_hitbox.damage} hp"
+        puts "oof -#{1} hp"
         puts "hp: #{hp_cmp.value}"
         if hp_cmp.value <= 0
           puts 'ded'
@@ -375,11 +388,11 @@ FECS::Scn::Play.add(
       if ((x_vel.positive?) && (player.state_direction == 'left')) || ((x_vel.negative?) && (player.state_direction == 'right'))
         #     change to changing_direction
         if player.state == 'changing_direction'
-        PlayerTileset.frame = 1
+          PlayerTileset.frame = 1
         else
-        player.state = 'changing_direction'
-        #     reset frame
-        PlayerTileset.frame = 0
+          player.state = 'changing_direction'
+          #     reset frame
+          PlayerTileset.frame = 0
         end
         if player.state_direction == 'right'
           player.state_direction = 'left'
@@ -403,7 +416,7 @@ FECS::Scn::Play.add(
             PlayerTileset.frames = PlayerAnimations[:standing_left]
           end
           #       reset frame
-        PlayerTileset.frame = 0
+          PlayerTileset.frame = 0
           #     else
         else
           #       increment
@@ -421,7 +434,7 @@ FECS::Scn::Play.add(
           else
             PlayerTileset.frames = PlayerAnimations[:running_left]
           end
-        PlayerTileset.frame = 0
+          PlayerTileset.frame = 0
           #     else
         else
           #       increment frame
@@ -441,7 +454,7 @@ FECS::Scn::Play.add(
           else
             PlayerTileset.frames = PlayerAnimations[:standing_left]
           end
-        PlayerTileset.frame = 0
+          PlayerTileset.frame = 0
           #     else
         else
           #       increment frame
