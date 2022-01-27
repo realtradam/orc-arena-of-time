@@ -83,8 +83,15 @@ PlayerTileset = Tileset.new(texture: Rl::Texture.new('./assets/lancelot_.png'))
 PlayerAnimations = {
   standing_left: [], standing_right:[],
   running_left: [], running_right:[],
+  turning_right: [], turning_left:[],
 }
   #lancelot.frames.push Rl::Rectangle.new((24 * x), 24*2, 24, 24)
+4.times do |x|
+  PlayerAnimations[:turning_left].push Rl::Rectangle.new((24 * x), 24*3, 24, 24)
+end
+4.times do |x|
+  PlayerAnimations[:turning_right].push Rl::Rectangle.new((24 * x) + 24*4, 24*3, 24, 24)
+end
 4.times do |x|
   PlayerAnimations[:standing_right].push Rl::Rectangle.new((24 * x), 24*0, 24, 24)
 end
@@ -361,32 +368,57 @@ FECS::Scn::Play.add(
     velocity_mag = Math.sqrt((x_vel**2) + (y_vel**2))
     #sprite.tileset.step((velocity_mag*0.04) * Rl.frame_time)
     # if took damaged
-      puts player.state
-      puts velocity_mag
-    if player.state.equal? 'damaged'
+    if player.state == 'damaged'
       #
       # else
     else
       #   if velocity opposite of direction
-      if false
+      if ((x_vel.positive?) && (player.state_direction == 'left')) || ((x_vel.negative?) && (player.state_direction == 'right'))
         #     change to changing_direction
+        player.state = 'changing_direction'
         #     reset frame
+        PlayerTileset.frame = 0
+        if player.state_direction == 'right'
+          player.state_direction = 'left'
+          PlayerTileset.frames = PlayerAnimations[:turning_left]
+        else
+          player.state_direction = 'right'
+          PlayerTileset.frames = PlayerAnimations[:turning_right]
+        end
         #   elsif changing direction
-      elsif false
+      elsif player.state == 'changing_direction'
         #     if reached end of frames
-        #       change to standing
-        #       reset frame
-        #     else
-        #       increment
-        #     end
+        turn_speed = 8
+        if tileset_cmp.tileset.frame + (turn_speed * Rl.frame_time) > PlayerTileset.frames.length
+          if player.state_direction == 'right'
+            #       change to standing
+            player.state = 'standing'
+            PlayerTileset.frames = PlayerAnimations[:standing_right]
+          else
+            #       change to standing
+            player.state = 'standing'
+            PlayerTileset.frames = PlayerAnimations[:standing_left]
+          end
+          #       reset frame
+        PlayerTileset.frame = 0
+          #     else
+        else
+          #       increment
+          tileset_cmp.tileset.step(turn_speed * Rl.frame_time)
+          #     end
+        end
         #   elsif standing
       elsif player.state == 'standing'
         #     if velocity
         if velocity_mag >= 0.1
           #       change to running
           player.state = 'running'
-          PlayerTileset.frames = PlayerAnimations[:running_right]
-          state_frame = 0
+          if player.state_direction == 'right'
+            PlayerTileset.frames = PlayerAnimations[:running_right]
+          else
+            PlayerTileset.frames = PlayerAnimations[:running_left]
+          end
+        PlayerTileset.frame = 0
           #     else
         else
           #       increment frame
@@ -399,15 +431,19 @@ FECS::Scn::Play.add(
       elsif player.state == 'running'
         #     if no velocity
         if velocity_mag < 0.1
-        #       change to standing
+          #       change to standing
           player.state = 'standing'
-          PlayerTileset.frames = PlayerAnimations[:standing_right]
-          state_frame = 0
-        #     else
+          if player.state_direction == 'right'
+            PlayerTileset.frames = PlayerAnimations[:standing_right]
+          else
+            PlayerTileset.frames = PlayerAnimations[:standing_left]
+          end
+        PlayerTileset.frame = 0
+          #     else
         else
-        #       increment frame
+          #       increment frame
           tileset_cmp.tileset.step((velocity_mag*0.04) * Rl.frame_time)
-        #     end
+          #     end
         end
         #   end
       end
