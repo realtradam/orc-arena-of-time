@@ -110,6 +110,10 @@ Levels.push(level0)
 FECS::Sys.new('ConstructLevel') do
   FECS::Sys::DestroyLevel.call
   level = Levels[CurrentLevel.level]
+  Player.component[FECS::Cmp::Hp].value = 4
+  FECS::Cmp::Player.first.state = 'running'
+  FECS::Cmp::Player.first.state_direction = 'right'
+  PlayerTileset.texture = OrcTextures[3]
 
   level[:walls].each do |wall|
     FECS::Cmp::Hitbox.new(
