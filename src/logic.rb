@@ -77,6 +77,8 @@ FECS::Cmp.new('EndGoal', :rec)
 FECS::Cmp::ScissorTime.new(time: 0)
 EndGoal = FECS::Cmp::EndGoal.new
 Input = FECS::Cmp::Input.new
+MapTexture = FECS::Cmp::Sprite.new
+OverhangTexture = FECS::Cmp::OverhangTexture.new
 
 OrcTextures = [
   Rl::Texture.new('./assets/orc_.png'),
@@ -125,18 +127,6 @@ end
 end
 
 PlayerTileset.frames = PlayerAnimations[:standing_right]
-
-FECS::Cmp::Sprite.new(
-  texture: Rl::Texture.new('./assets/mapinit.png'),
-  source_rec: Rl::Rectangle.new(0,0,448,336),
-  dest_rec: Rl::Rectangle.new(0,0,448*2,336*2)
-)
-
-FECS::Cmp::OverhangTexture.new(
-  texture: Rl::Texture.new('./assets/mapinit-overhang.png'),
-  source_rec: Rl::Rectangle.new(0,0,140,220),
-  dest_rec: Rl::Rectangle.new(0,0,140*2,220*2)
-)
 
 =begin
 MovingHitbox1 = FECS::Cmp::Hitbox.new(
@@ -746,7 +736,7 @@ FECS::Scn::Play.add(
   end
 )
 
-CurrentLevel.level = 0
+CurrentLevel.level = 1
 
 FelECS::Order.sort(
   FECS::Sys::PlayerInput,
