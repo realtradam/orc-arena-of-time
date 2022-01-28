@@ -1,6 +1,5 @@
 GameName = 'Orc: Arena of Time'
 Rl.init_window(900, 675, GameName)
-Rl.init_audio_device if Rl.platform == 'web'
 
 Rl.target_fps = 60
 

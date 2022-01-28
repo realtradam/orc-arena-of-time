@@ -74,6 +74,8 @@ FECS::Cmp.new('EndGoal', :rec)
 #)
 
 #FECS::Cmp::ScissorBox.new(rec: Rl::Rectangle.new(200,200,250,250))
+
+
 FECS::Cmp::ScissorTime.new(time: 0)
 EndGoal = FECS::Cmp::EndGoal.new
 Input = FECS::Cmp::Input.new
@@ -187,9 +189,43 @@ Player = FECS::Ent.new(
   ),
 )
 
+Music = false # prevents a longjmp error in browsers
+
 FECS::Stg.add(FECS::Scn.new('Play'))
 
 FECS::Scn::Play.add(
+  FECS::Sys.new('Music') do
+    puts 'check web'
+    if Rl.platform == 'web'
+      puts 'check mouse press'
+      if Rl.mouse_button_pressed? 0
+        puts 'check if device redy'
+        unless Rl.audio_device_ready?
+          puts 'load device'
+          Rl.init_audio_device
+          puts 'set master'
+          Rl.set_master_volume(0.1)
+        end
+      end
+      puts 'check if sound exists'
+      next unless Rl.audio_device_ready?
+      if !Music
+        puts 'load it'
+        Music = Rl::Sound.new('./assets/music.ogg')
+        puts 'set volume'
+        #Music.volume = 0.05
+        puts 'check if its playing'
+      elsif !Music.playing?
+        puts 'play it'
+        Music.play
+      end
+    end
+    #if Rl.key_pressed? 87
+    #end
+    #unless Music.playing?
+    #  Music.play
+    #end
+  end,
   FECS::Sys.new('PlayerInput') do
     Input.move_up = Rl.key_down? 87 # W
     Input.move_left = Rl.key_down? 65 # A
@@ -405,13 +441,13 @@ FECS::Scn::Play.add(
       else
         PlayerTileset.frames = PlayerAnimations[:damage_left]
       end
-        movement = ent.component[FECS::Cmp::Movement]
-        unless y_vel.zero?
-          ent.component[FECS::Cmp::Velocity].y = -(y_vel / velocity_mag) * (movement.max_speed)
-        end
-        unless x_vel.zero?
-          ent.component[FECS::Cmp::Velocity].x = -(x_vel / velocity_mag) * (movement.max_speed)
-        end
+      movement = ent.component[FECS::Cmp::Movement]
+      unless y_vel.zero?
+        ent.component[FECS::Cmp::Velocity].y = -(y_vel / velocity_mag) * (movement.max_speed)
+      end
+      unless x_vel.zero?
+        ent.component[FECS::Cmp::Velocity].x = -(x_vel / velocity_mag) * (movement.max_speed)
+      end
       PlayerTileset.frame = 0
     end
     if player.state == 'dead_damaged'
