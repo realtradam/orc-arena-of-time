@@ -174,7 +174,7 @@ FECS::Cmp::Hitbox.new(
 
 Player = FECS::Ent.new(
   FECS::Cmp::Player.new,
-  FECS::Cmp::Hp.new(value: 4, max_invincible_time: 2),
+  FECS::Cmp::Hp.new(value: 4, max_invincible_time: 1.6),
   FECS::Cmp::Position.new(x: 120, y: 300),
   FECS::Cmp::Velocity.new,
   FECS::Cmp::Tileset.new(
@@ -191,9 +191,9 @@ Player = FECS::Ent.new(
   ),
   FECS::Cmp::Hitbox.new(
     #rec: Rl::Rectangle.new(0,0,16*2,20*2),
-    rec: Rl::Rectangle.new(0,0,16*2,10*2),
-    offset_x: 4*2,
-    offset_y: 14*2
+    rec: Rl::Rectangle.new(0,0,10*2,8*2),
+    offset_x: 7*2,
+    offset_y: 16*2
   ),
 )
 
@@ -364,6 +364,8 @@ FECS::Scn::Play.add(
     player = FECS::Cmp::Player.first.entity
     player_hitbox = player.component[FECS::Cmp::Hitbox]
     hp_cmp = player.component[FECS::Cmp::Hp]
+
+    next unless player.component[FECS::Cmp::Player].moved
     next if hp_cmp.value <= 0
     if hp_cmp.invincible_timer >= 0
       hp_cmp.invincible_timer -= Rl.frame_time
@@ -436,7 +438,7 @@ FECS::Scn::Play.add(
         PlayerTileset.frame = 0
       end
     elsif player.state == 'dead'
-      anim_speed = 3
+      anim_speed = 6
       if tileset_cmp.tileset.frame + (anim_speed * Rl.frame_time) <= PlayerTileset.frames.length
         PlayerTileset.step(anim_speed * Rl.frame_time)
       else
