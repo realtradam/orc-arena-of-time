@@ -80,7 +80,8 @@ FECS::Cmp.new('Transition', :state, :rec, :time).new(
   rec: Rl::Rectangle.new(0,0,0,0),
   time: 0)
 
-BkgWhite = Rl::Color.new(255,255,255,255)
+BkgWhite = Rl::Color.new(255,255,255,200)
+PlayerBkgWhite = Rl::Color.new(255,200,200,150)
 #ScissorPath = Path.new(
 #  lambda do |time|
 #    [Math.bezier([200, 200, 1183, 200],time)-150,
@@ -90,7 +91,7 @@ BkgWhite = Rl::Color.new(255,255,255,255)
 
 #FECS::Cmp::ScissorBox.new(rec: Rl::Rectangle.new(200,200,250,250))
 
-
+ResetPrompt = Rl::Texture.new('./assets/resetprompt.png')
 FECS::Cmp::ScissorTime.new(time: 0)
 EndGoal = FECS::Cmp::EndGoal.new
 Input = FECS::Cmp::Input.new
@@ -192,9 +193,9 @@ Player = FECS::Ent.new(
     rotation: 0
   ),
   FECS::Cmp::Movement.new(
-    deceleration: 2500,
-    acceleration: 1000,
-    max_speed: 400,
+    deceleration: 1500,
+    acceleration: 1500,
+    max_speed: 300,
   ),
   FECS::Cmp::Hitbox.new(
     #rec: Rl::Rectangle.new(0,0,16*2,20*2),
@@ -205,6 +206,9 @@ Player = FECS::Ent.new(
 )
 
 Music = false # prevents a longjmp error in browsers
+HurtSound = false 
+IntroSound = false
+DeathSound = false
 Resetting = false
 ScissorPath = 10000
 ScissorSize = 1
@@ -221,7 +225,7 @@ FECS::Sys.new('Music') do
         #puts 'load device'
         Rl.init_audio_device
         #puts 'set master'
-        Rl.set_master_volume(0.1)
+        Rl.set_master_volume(0.5)
       end
     end
     #puts 'check if sound exists'
@@ -229,12 +233,15 @@ FECS::Sys.new('Music') do
     if !Music
       #puts 'load it'
       Music = Rl::Sound.new('./assets/music.ogg')
+      HurtSound = Rl::Sound.new('../assets/hurt.wav')
+      IntroSound = Rl::Sound.new('../assets/intro.ogg')
+      DeathSound = Rl::Sound.new('../assets/death.ogg')
       #puts 'set volume'
-      #Music.volume = 0.05
       #puts 'check if its playing'
     elsif !Music.playing?
       #puts 'play it'
       Music.play
+      Music.volume = 0.09
     end
   end
   #if Rl.key_pressed? 87
@@ -242,6 +249,13 @@ FECS::Sys.new('Music') do
   #unless Music.playing?
   #  Music.play
   #end
+end
+FECS::Sys.new('IntroSound') do
+  button_clicked = FECS::Cmp::Button.first.clicked
+  if Rl.audio_device_ready? && IntroSound && !IntroSoundPlayed && button_clicked
+    IntroSoundPlayed = true
+    IntroSound.play
+  end
 end
 FECS::Sys.new('Transition') do
   cmp = FECS::Cmp::Transition.first
@@ -253,7 +267,7 @@ FECS::Sys.new('Transition') do
     cmp.time = 0
   end
   if cmp.state == 'into'
-    cmp.time += Rl.frame_time
+    cmp.time += (1.0/60.0)#Rl.frame_time
     if cmp.time >= 1
       cmp.state = 'outof_init'
       cmp.time = 1
@@ -289,7 +303,7 @@ FECS::Sys.new('Transition') do
     cmp.time = -0.5
   end
   if cmp.state == 'outof'
-    cmp.time += Rl.frame_time
+    cmp.time += (1.0/60.0)#Rl.frame_time
     if cmp.time >= 1
       cmp.state = 'none'
       cmp.time = 1
@@ -333,6 +347,7 @@ FECS::Scn::Menu.add(
         button.clicked = false
       end
       if trans.state == 'outof_init'
+        IntroSound.play if Rl.platform == 'web'
         FECS::Sys::DestroyTitleScreen.call
       end
     end
@@ -382,7 +397,7 @@ FECS::Scn::Play.add(
     Input.show_debug = Rl.key_down? 80 # P
     Input.reset = Rl.key_down? 82 # R
     #if Rl.key_pressed? 82
-      #FECS::Sys::ConstructLevel.call
+    #FECS::Sys::ConstructLevel.call
     #end
   end,
   FECS::Sys.new('PlayerReset') do
@@ -561,12 +576,18 @@ FECS::Scn::Play.add(
           if player_hitbox.rec.collide_with_rec?(dmg_hitbox.rec) 
             FECS::Cmp::Player.first.state = 'set_damaged'
             hp_cmp.value -= dmg_hitbox.damage
-            hp_cmp.invincible_timer = hp_cmp.max_invincible_time
             #puts "oof -#{dmg_hitbox.damage} hp"
             #puts "hp: #{hp_cmp.value}"
             if hp_cmp.value <= 0
               FECS::Cmp::Player.first.state = 'set_dead'
               #puts 'ded'
+              DeathSound.play if Rl.platform == 'web'
+            else
+              hp_cmp.invincible_timer = hp_cmp.max_invincible_time
+              if Rl.platform == 'web'
+                HurtSound.play
+                HurtSound.volume = 0.45
+              end
             end
             break
           end
@@ -574,12 +595,18 @@ FECS::Scn::Play.add(
       else
         FECS::Cmp::Player.first.state = 'set_damaged'
         hp_cmp.value -= 1
-        hp_cmp.invincible_timer = hp_cmp.max_invincible_time
         #puts "oof -#{1} hp"
         #puts "hp: #{hp_cmp.value}"
         if hp_cmp.value <= 0
           FECS::Cmp::Player.first.state = 'set_dead'
           #puts 'ded'
+          DeathSound.play if Rl.platform == 'web'
+        else
+          hp_cmp.invincible_timer = hp_cmp.max_invincible_time
+          if Rl.platform == 'web'
+            HurtSound.play
+            HurtSound.volume = 0.45
+          end
         end
       end
     end
@@ -848,7 +875,8 @@ FECS::Scn::Play.add(
           Rl.draw_texture_pro(texture: result.texture,
                               origin: Rl::Vector2.new(0,0),
                               source_rec: result.source_rec,
-                              dest_rec: result.dest_rec)
+                              dest_rec: result.dest_rec,
+                              tint: BkgWhite)
         end
       end
     end
@@ -866,7 +894,7 @@ FECS::Scn::Play.add(
                           origin: sprite_cmp.origin,
                           source_rec: sprite_cmp.tileset.rec,
                           dest_rec: sprite_cmp.dest_rec,
-                          tint: Rl::Color.new(255,255,255,100),
+                          tint: PlayerBkgWhite,
                           rotation: sprite_cmp.rotation)
     end
     Rl.scissor_mode(
@@ -943,22 +971,60 @@ FECS::Scn::Play.add(
     end
   end
 )
+FECS::Sys.new('SetBackgroundColor') do
+  trans = FECS::Cmp::Transition.first
+  if trans.state == 'none'
+    BkgWhite.a = 150
+    PlayerBkgWhite.a = 100
+  elsif trans.state == 'into'
+    BkgWhite.a = [Math.interpolate(150,-50,[trans.time,0].max),0].max
+    PlayerBkgWhite.a = [Math.interpolate(100,-50,[trans.time,0].max),0].max
+  elsif trans.state == 'outof'
+    BkgWhite.a = [Math.interpolate(-50,150,[trans.time,0].max),0].max
+    PlayerBkgWhite.a = [Math.interpolate(-50,100,[trans.time,0].max),0].max
+  end
+end
+
+FECS::Sys.new('RenderResetText') do
+  trans = FECS::Cmp::Transition.first
+  if Player.component[FECS::Cmp::Hp].value <= 0
+    if trans.state == 'into'
+      Rl.draw_texture_pro(texture: ResetPrompt,
+                          origin: Rl::Vector2.new(0,0),
+                          source_rec: Rl::Rectangle.new(0,0,900,650),
+                          dest_rec: Rl::Rectangle.new(0,0,900,650),
+                          tint: Rl::Color.new(255,255,255,Math.interpolate(255,0,trans.time)))
+    elsif trans.state == 'none'
+      Rl.draw_texture_pro(texture: ResetPrompt,
+                          origin: Rl::Vector2.new(0,0),
+                          source_rec: Rl::Rectangle.new(0,0,900,650),
+                          dest_rec: Rl::Rectangle.new(0,0,900,650),
+                          tint: WHITE)
+
+    end
+  end
+end
 
 #CurrentLevel.level = 0
 FECS::Sys::ConstructTitleScreen.call
 FECS::Scn::Menu.add(
   FECS::Sys::Transition,
+  #FECS::Sys::IntroSound,
   FECS::Sys::Music,
 )
 FECS::Scn::Play.add(
   FECS::Sys::Transition,
   FECS::Sys::Music,
+  FECS::Sys::SetBackgroundColor,
+  FECS::Sys::RenderResetText,
 )
 FECS::Stg.add(
   FECS::Scn::Menu,
 )
 
 FelECS::Order.sort(
+  #FECS::Sys::IntroSound,
+  FECS::Sys::Music,
   FECS::Sys::PlayerInput,
   FECS::Sys::PlayerReset,
   FECS::Sys::Button,
@@ -980,4 +1046,5 @@ FelECS::Order.sort(
   FECS::Sys::Render,
   # Renders the debug hitboxes
   FECS::Sys::DebugRenderHitbox,
+  FECS::Sys::RenderResetText,
 )

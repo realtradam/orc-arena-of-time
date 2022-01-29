@@ -32,13 +32,13 @@ level0 = {
     lambda do |time|
       xstart = 494
       ystart = 355
-      xstartnode = 827
-      ystartnode = 431
-      xendnode = 816
+      xstartnode = 800
+      ystartnode = 440
+      xendnode = 780
       yendnode = 354
       xend = 758
       yend = 152
-      easeTime = 1 - Math.cos((time * Math::PI) / 2)
+      easeTime = time #1 - Math.cos((time * Math::PI) / 2)
       [Math.bezier([xstart, xstartnode, xendnode, xend],easeTime)-(250/2),
        Math.bezier([ystart, ystartnode, yendnode, yend],easeTime)-(250/2)]
     end,
@@ -61,22 +61,22 @@ level0 = {
       path: './assets/mapinit-wasd.png',
       time_start: 0,
       time_end: -1,
-      source_rec: Rl::Rectangle.new(0,0,284,204),
-      dest_rec: Rl::Rectangle.new(0,0,284*2,204*2),
+      source_rec: Rl::Rectangle.new(0,0,450,325),
+      dest_rec: Rl::Rectangle.new(0,0,450*2,325*2),
     },
     {
       path: './assets/mapinit-inside.png',
       time_start: 0.7,
       time_end: -1,
-      source_rec: Rl::Rectangle.new(0,0,421,190),
-      dest_rec: Rl::Rectangle.new(0,0,421*2,190*2),
+      source_rec: Rl::Rectangle.new(0,0,450,325),
+      dest_rec: Rl::Rectangle.new(0,0,450*2,325*2),
     },
     {
       path: './assets/mapinit-ladder.png',
       time_start: 1.3,
       time_end: -1,
-      source_rec: Rl::Rectangle.new(0,0,192,81),
-      dest_rec: Rl::Rectangle.new(0,0,192*2,81*2),
+      source_rec: Rl::Rectangle.new(0,0,450,325),
+      dest_rec: Rl::Rectangle.new(0,0,450*2,325*2),
     },
   ],
   end_goal: [160*2,272*2,16*2,16*2],
@@ -215,7 +215,29 @@ level1 = {
     end
   ),
   scissor_speed: [1.0/2.0, 1.0/3.5, 1.0/6.0, 1.0/4.5, 1.0/3.0],
-  timed_render: [],
+  timed_render: [
+    {
+      path: './assets/map2-avoidspikes.png',
+      time_start: 0.55,
+      time_end: -1,
+      source_rec: Rl::Rectangle.new(42,170,132,49),
+      dest_rec: Rl::Rectangle.new(38*2,170*2,132*2,49*2),
+    },
+    {
+      path: './assets/map2-justin.png',
+      time_start: 2.50,
+      time_end: -1,
+      source_rec: Rl::Rectangle.new(168,133,84,25),
+      dest_rec: Rl::Rectangle.new(168*2,133*2,84*2,25*2),
+    },
+    {
+      path: './assets/map2-time.png',
+      time_start: 2.9,
+      time_end: -1,
+      source_rec: Rl::Rectangle.new(273,131,40,22),
+      dest_rec: Rl::Rectangle.new(273*2,131*2,40*2,22*2),
+    },
+  ],
   end_goal: [352*2,240*2,16*2,16*2],
   walls: [
     [178, 180, 60, 56],
@@ -260,8 +282,192 @@ level1 = {
   ]
 }
 
+
+mazelevel= {
+  map_texture: {
+    path: './assets/Maze/floormaze.png',
+    source_rec: Rl::Rectangle.new(0,0,480,368),
+    dest_rec: Rl::Rectangle.new(0,0,480*2,368*2)
+  },
+  overhang_texture: {
+    path: './assets/map2-overhang.png',
+    source_rec: Rl::Rectangle.new(0,0,1,1),
+    dest_rec: Rl::Rectangle.new(9999,9999,0,0)
+  },
+  player_spawn: Rl::Vector2.new(460,130),
+  scissor_size: Path.new(
+    lambda do |time|
+      [200,
+       607]
+    end,
+  ),
+  scissor_path: Path.new(
+    lambda do |time|
+      #xstart = 206
+      #ystart = 509
+      #xstartnode = 204
+      #ystartnode = 390
+      #xendnode = 228
+      #yendnode = 336
+      #xend = 153
+      #yend = 268
+      #easeTime = time #1 - Math.cos((time * Math::PI) / 2)
+      #[Math.bezier([xstart, xstartnode, xendnode, xend],easeTime)-(250/2),
+      # Math.bezier([ystart, ystartnode, yendnode, yend],easeTime)-(250/2)]
+      [(270 * -Math.sin(120 * (time))+510)-(200/2),
+       367-(607/2)]
+    end,
+  ),
+  scissor_speed: [1.0/200.0],
+  timed_render: [
+    {
+      path: './assets/Maze/mazewalls.png',
+      time_start: 0,
+      time_end: -1,
+      source_rec: Rl::Rectangle.new(0,0,900,650),
+      dest_rec: Rl::Rectangle.new(0*2,0*2,900*2,650*2),
+    },
+    {
+      path: './assets/Maze/invisiblemaze.png',
+      time_start: 0,
+      time_end: -1,
+      source_rec: Rl::Rectangle.new(439,64,153,68),
+      dest_rec: Rl::Rectangle.new(438,64,153,58),
+    },
+  ],
+  end_goal: [452,516,24,24],
+  walls: [
+    [818,180,110,344],
+    [842,524,86,42],
+    [842,140,86,40],
+    [170,42,758,100],
+    [97,62,75,526],
+    [172,566,732,54],
+    [554,180,140,88],
+    [554,268,44,10],
+    [650,268,44,10],
+    [554,278,12,64],
+    [556,308,192,34],
+    [468,374,184,56],
+    [662,404,96,34],
+    [746,308,12,130],
+    #[652,404,10,26],
+    #[650,430,12,38],
+    [618,468,140,34],
+    [650,502,12,64],
+    [406,468,160,34],
+    #[394,404,12,162],
+    [298,404,96,34],
+    [298,438,12,64],
+    [234,468,64,34],
+    [458,340,12,66],
+    [246,340,212,34],
+    [234,244,12,194],
+    #[246,244,123,24],
+    [426,244,44,34],
+    [458,180,12,64],
+    [172,180,286,34],
+    [394,404,12,98],
+    [234,244,108,32],
+    [566,468,52,34]
+  ],
+  damage_areas: [
+    #[10, 0,0, 100,100],
+  ],
+  damage_walls: [
+    #[1, 612, 186, 24, 54], # made spikes taller downward so player cant just walk below them
+    #[1, 422, 186, 24, 54],
+    #[1, 708, 154, 24, 34],
+    #[1, 516, 154, 24, 34],
+    #[1, 324, 154, 24, 34]
+  ]
+}
+
+lastlevel = {
+  map_texture: {
+    path: './assets/Ending/ending.png',
+    source_rec: Rl::Rectangle.new(0,0,464,352),
+    dest_rec: Rl::Rectangle.new(0,0,464*2,352*2)
+  },
+  overhang_texture: {
+    path: './assets/Ending/ending-overhang.png',
+    source_rec: Rl::Rectangle.new(0,0,252,155),
+    dest_rec: Rl::Rectangle.new(0,0,252*2,155*2)
+  },
+  player_spawn: Rl::Vector2.new(465,557),
+  scissor_size: Path.new(
+    lambda do |time|
+      [Math.interpolate(232.5,94.2,time),
+       Math.interpolate(207.0,80.8,time)]
+    end,
+    lambda do |time|
+      [Math.interpolate(94.2,682.2,time),
+       Math.interpolate(80.8,357.2,time)]
+    end,
+  ),
+  scissor_path: Path.new(
+    lambda do |time|
+      xstart = 465.8
+      ystart = 558.9
+      xstartnode = 465.8
+      ystartnode = 558.9
+      xendnode = 465.2
+      yendnode = 381
+      xend = 465.8
+      yend = 319.7
+      easeTime = time#1 - Math.cos((time * Math::PI) / 2)
+      [Math.bezier([xstart, xstartnode, xendnode, xend],easeTime)-(Math.interpolate(232.5,94.2,time)/2),
+       Math.bezier([ystart, ystartnode, yendnode, yend],easeTime)-(Math.interpolate(207.0,80.8,time)/2)]
+    end,
+    lambda do |time|
+      xstart = 465.8
+      ystart = 319.7
+      xstartnode = 473.1
+      ystartnode = 263.1
+      xendnode = 168.7
+      yendnode = 129.4
+      xend = 479.9
+      yend = 198.0
+
+      [Math.bezier([xstart, xstartnode, xendnode, xend],time)-(Math.interpolate(94.2,682.2,time)/2),
+       Math.bezier([ystart, ystartnode, yendnode, yend],time)-(Math.interpolate(80.8,357.2,time)/2)]
+    end
+  ),
+  scissor_speed: [1.0/3.0, 1.0/3.0],
+  timed_render: [],
+  end_goal: [9999,9999,1,1],
+  walls: [
+    [106,308,320,167],
+    [315,502,59,63],
+    [311,475,125,27],
+    [320,630,280,47],
+    [313,565,49,65],
+    [566,566,37,64],
+    [554,468,49,98],
+    [502,467,52,37],
+    [502,344,152,125],
+    [480,308,310,36],
+    [426,308,22,34],
+    [210,116,124,120],
+    [626,116,124,120],
+    [358,86,52,36],
+    [65,52,117,256],
+    [182,8,621,80],
+    [778,88,77,220],
+
+  ],
+  damage_areas: [
+    #[10, 0,0, 100,100],
+  ],
+  damage_walls: [
+    #[10, 350,200, 050,350], 
+  ]
+}
+
 Levels.push(level0)
 Levels.push(level1)
+Levels.push(mazelevel)
+Levels.push(lastlevel)
 
 FECS::Sys.new('ConstructLevel') do
   FECS::Sys::DestroyLevel.call
@@ -310,7 +516,7 @@ FECS::Sys.new('ConstructLevel') do
       source_rec: rndr[:source_rec],
       dest_rec: rndr[:dest_rec],
       rotation: 0,
-      tint: RED
+      tint: BkgWhite
     )
   end
 
