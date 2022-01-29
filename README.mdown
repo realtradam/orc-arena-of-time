@@ -1,1 +1,3 @@
 # Yup this is a game
+
+Come back soon, im going to add more info about how the game was made, and what I used to compile it for web with raylib(if you are curious and I didnt update this readme in more then a week, just send me a message or open an issue)
