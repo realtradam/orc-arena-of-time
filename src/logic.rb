@@ -209,8 +209,53 @@ Resetting = false
 ScissorPath = 10000
 ScissorSize = 1
 
-FECS::Stg.add(FECS::Scn.new('Play'))
+FECS::Scn.new('Menu')
+FECS::Scn::Menu.add(
+  FECS::Sys.new('Button') do
+    FECS::Cmp::Button.each do |button|
+      ent = button.entity
+      sprite = ent.component[FECS::Cmp::Sprite]
+      hitbox = ent.component[FECS::Cmp::Hitbox]
+      if button.clicked
+        sprite.texture = button.pressed_texture
+      else
+        sprite.texture = button.unpressed_texture
+      end
+      if hitbox.rec.collide_with_point? Rl.mouse_position
+        if Rl.mouse_button_down? 0
+          button.clicked = true
+        elsif Rl.mouse_button_up? 0 and button.clicked
+          button.clicked = false
+          FECS::Sys::DestroyTitleScreen.call
+        end
+      else
+        button.clicked = false
+      end
+    end
+  end,
+  FECS::Sys.new('RenderMenu') do
+    FECS::Cmp::Sprite.each do |sprite_cmp|
+      Rl.draw_texture_pro(texture: sprite_cmp.texture,
+                          origin: Rl::Vector2.new(0,0),
+                          source_rec: sprite_cmp.source_rec,
+                          dest_rec: sprite_cmp.dest_rec)
+    end
+  end,
+  FECS::Sys.new('ApplyPositionToSprite') do
+    FECS::Cmp::Position.each do |position_cmp|
+      ent = position_cmp.entity
+      next if ent.components[FECS::Cmp::Sprite].nil?
+      sprite = ent.component[FECS::Cmp::Sprite]
+      hitbox = ent.component[FECS::Cmp::Hitbox]
+      sprite.dest_rec.x = position_cmp.x
+      sprite.dest_rec.y = position_cmp.y
+      hitbox.rec.x = position_cmp.x + hitbox.offset_x
+      hitbox.rec.y = position_cmp.y + hitbox.offset_y
+    end
+  end,
+)
 
+FECS::Scn.new('Play')
 FECS::Scn::Play.add(
   FECS::Sys.new('Music') do
     puts 'check web'
@@ -877,7 +922,9 @@ FECS::Scn::Play.add(
   end
 )
 
-CurrentLevel.level = 0
+#CurrentLevel.level = 0
+FECS::Sys::ConstructTitleScreen.call
+FECS::Stg.add(FECS::Scn::Menu)
 
 FelECS::Order.sort(
   FECS::Sys::PlayerInput,
