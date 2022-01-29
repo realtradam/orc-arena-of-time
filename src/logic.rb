@@ -811,7 +811,6 @@ FECS::Scn::Play.add(
   FECS::Sys.new('CheckEndGoal') do
     player_hitbox = Player.component[FECS::Cmp::Hitbox].rec
     if EndGoal.rec.collide_with_rec? player_hitbox
-      puts 'you\'re winner'
       trans = FECS::Cmp::Transition.first
       if trans.state == 'none'
         trans.state = 'into_init'
