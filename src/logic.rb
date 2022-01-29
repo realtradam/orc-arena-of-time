@@ -46,6 +46,7 @@ FECS::Cmp.new('Input',
               move_up: false,
               move_down: false,
               show_debug: false,
+              reset: false,
              )
 FECS::Cmp.new('ScissorBox',
               :rec)
@@ -65,7 +66,21 @@ FECS::Cmp.new('DamageHitbox',
               offset_x: 0,
               offset_y: 0)
 FECS::Cmp.new('EndGoal', :rec)
+# none: not transitioning
+# into_init: change into starting transtition
+# into: iterating over into transtition
+#   shrink scissor
+#   fade away background
+# outof_init: load level change into ending transtition
+#   embiggen scissor
+#   fade in background
+# outof: iterate over init
+FECS::Cmp.new('Transition', :state, :rec, :time).new(
+  state: 'none',
+  rec: Rl::Rectangle.new(0,0,0,0),
+  time: 0)
 
+BkgWhite = Rl::Color.new(255,255,255,255)
 #ScissorPath = Path.new(
 #  lambda do |time|
 #    [Math.bezier([200, 200, 1183, 200],time)-150,
@@ -190,6 +205,9 @@ Player = FECS::Ent.new(
 )
 
 Music = false # prevents a longjmp error in browsers
+Resetting = false
+ScissorPath = 10000
+ScissorSize = 1
 
 FECS::Stg.add(FECS::Scn.new('Play'))
 
@@ -232,7 +250,17 @@ FECS::Scn::Play.add(
     Input.move_down = Rl.key_down? 83 # S
     Input.move_right = Rl.key_down? 68 # D
     Input.show_debug = Rl.key_down? 80 # P
-    if Rl.key_pressed? 82
+    Input.reset = Rl.key_down? 82 # R
+    #if Rl.key_pressed? 82
+      #FECS::Sys::ConstructLevel.call
+    #end
+  end,
+  FECS::Sys.new('PlayerReset') do
+    trans = FECS::Cmp::Transition.first
+    if Input.reset && trans.state == 'none'
+      Resetting = true
+      FECS::Cmp::Transition.first.state = 'into_init'
+    elsif Resetting && trans.state == 'outof_init'
       FECS::Sys::ConstructLevel.call
     end
   end,
@@ -244,7 +272,7 @@ FECS::Scn::Play.add(
     input_x = 0
     input_y = 0
     movement_cmp = ent.component[FECS::Cmp::Movement]
-    unless (FECS::Cmp::Player.first.state == 'damaged') || (ent.component[FECS::Cmp::Hp].value <= 0)
+    unless (FECS::Cmp::Player.first.state == 'damaged') || (ent.component[FECS::Cmp::Hp].value <= 0) || (FECS::Cmp::Transition.first.state != 'none')
       if Input.move_up
         input_y -= 1.0
         ent.component[FECS::Cmp::Player].moved = true
@@ -396,8 +424,8 @@ FECS::Scn::Play.add(
     if hp_cmp.invincible_timer >= 0
       hp_cmp.invincible_timer -= Rl.frame_time
     else
-      scissor_path = Levels[CurrentLevel.level][:scissor_path].call(FECS::Cmp::ScissorTime.first.time)
-      scissor_size = Levels[CurrentLevel.level][:scissor_size].call(FECS::Cmp::ScissorTime.first.time)
+      scissor_path = ScissorPath #Levels[CurrentLevel.level][:scissor_path].call(FECS::Cmp::ScissorTime.first.time)
+      scissor_size = ScissorSize #Levels[CurrentLevel.level][:scissor_size].call(FECS::Cmp::ScissorTime.first.time)
       if Rl::Rectangle.new(scissor_path[0], scissor_path[1], scissor_size[0], scissor_size[1]).collide_with_rec?(player_hitbox.rec)
         FECS::Cmp::DamageHitbox.each do |dmg_hitbox|
           if player_hitbox.rec.collide_with_rec?(dmg_hitbox.rec) 
@@ -627,6 +655,14 @@ FECS::Scn::Play.add(
     player_hitbox = Player.component[FECS::Cmp::Hitbox].rec
     if EndGoal.rec.collide_with_rec? player_hitbox
       puts 'you\'re winner'
+      trans = FECS::Cmp::Transition.first
+      if trans.state == 'none'
+        trans.state = 'into_init'
+        Player.component[FECS::Cmp::Velocity].x = 0
+        Player.component[FECS::Cmp::Velocity].x = 0
+      elsif trans.state == 'outof_init'
+        CurrentLevel.level += 1
+      end
     end
   end,
   FECS::Sys.new('ShowSpeed') do
@@ -652,7 +688,7 @@ FECS::Scn::Play.add(
   end,
   FECS::Sys.new('Scissor') do
     player_ent = FECS::Cmp::Player.first.entity
-    if player_ent.component[FECS::Cmp::Player].moved
+    if player_ent.component[FECS::Cmp::Player].moved && (player_ent.component[FECS::Cmp::Hp].value > 0)
       if FECS::Cmp::ScissorTime.first.time < Levels[CurrentLevel.level][:scissor_path].paths.length - 0.00001
         FECS::Cmp::ScissorTime.first.time += Rl.frame_time * Levels[CurrentLevel.level][:scissor_speed][FECS::Cmp::ScissorTime.first.time.to_i]
         if FECS::Cmp::ScissorTime.first.time >= Levels[CurrentLevel.level][:scissor_path].paths.length - 0.00001
@@ -662,6 +698,8 @@ FECS::Scn::Play.add(
         FECS::Cmp::ScissorTime.first.time = Levels[CurrentLevel.level][:scissor_path].paths.length - 0.00001
       end
     end
+    ScissorPath = Levels[CurrentLevel.level][:scissor_path].call(FECS::Cmp::ScissorTime.first.time)
+    ScissorSize = Levels[CurrentLevel.level][:scissor_size].call(FECS::Cmp::ScissorTime.first.time)
   end,
   FECS::Sys.new('TimedRender') do
     # check level > timed_render
@@ -685,9 +723,72 @@ FECS::Scn::Play.add(
       end
     end
   end,
+  FECS::Sys.new('Transition') do
+    cmp = FECS::Cmp::Transition.first
+    #cmp.state = 'into_init' if Rl.mouse_button_pressed? 0
+    next if cmp.state == 'none'
+    if cmp.state == 'into_init'
+      FECS::Cmp::Player.first.moved = false
+      cmp.state = 'into'
+      cmp.time = 0
+    end
+    if cmp.state == 'into'
+      cmp.time += Rl.frame_time
+      if cmp.time >= 1
+        cmp.state = 'outof_init'
+        cmp.time = 1
+      end
+      #ScissorPath = [(cmp.time**3),
+      #               (cmp.time**3)]
+      easeTime = (1 - cmp.time) ** 3
+
+      n1 = 7.5625
+      d1 = 2.75
+      time = (cmp.time)
+
+      if time < (1 / d1)
+        easeTime = n1 * time * time
+      elsif time < (2 / d1)
+        easeTime = n1 * (time -= (1.5 / d1)) * time + 0.75
+      elsif time < (2.5 / d1)
+        easeTime = n1 * (time -= (2.25 / d1)) * time + 0.9375
+      else
+        easeTime = n1 * (time -= (2.625 / d1)) * time + 0.984375
+      end
+      easeTime = 1 - easeTime
+
+      newsize = [easeTime * ScissorSize[0],
+                 easeTime * ScissorSize[1]]
+      ScissorPath = [
+        ScissorPath[0] + ((ScissorSize[0] - newsize[0])/2),
+        ScissorPath[1] + ((ScissorSize[1] - newsize[1])/2)
+      ]
+      ScissorSize = newsize
+    elsif cmp.state == 'outof_init'
+      cmp.state = 'outof'
+      cmp.time = -0.5
+    end
+    if cmp.state == 'outof'
+      cmp.time += Rl.frame_time
+      if cmp.time >= 1
+        cmp.state = 'none'
+        cmp.time = 1
+      end
+      c1 = 1.70158
+      c3 = c1 + 1
+      easeTime = [1 + c3 * ((cmp.time - 1)**3) + c1 * ((cmp.time - 1)**2),0].max
+      newsize = [easeTime * ScissorSize[0],
+                 easeTime * ScissorSize[1]]
+      ScissorPath = [
+        ScissorPath[0] + ((ScissorSize[0] - newsize[0])/2),
+        ScissorPath[1] + ((ScissorSize[1] - newsize[1])/2)
+      ]
+      ScissorSize = newsize
+    end
+  end,
   FECS::Sys.new('Render') do
-    scissor_path = Levels[CurrentLevel.level][:scissor_path].call(FECS::Cmp::ScissorTime.first.time)
-    scissor_size = Levels[CurrentLevel.level][:scissor_size].call(FECS::Cmp::ScissorTime.first.time)
+    scissor_path = ScissorPath #Levels[CurrentLevel.level][:scissor_path].call(FECS::Cmp::ScissorTime.first.time)
+    scissor_size = ScissorSize #Levels[CurrentLevel.level][:scissor_size].call(FECS::Cmp::ScissorTime.first.time)
     Rl::Rectangle.new(scissor_path[0], scissor_path[1], scissor_size[0], scissor_size[1]).draw(color: Rl::Color.new(52,52,64,255))
     player = FECS::Cmp::Player.first.entity
     y_vel = player.component[FECS::Cmp::Velocity].y.abs
@@ -747,8 +848,8 @@ FECS::Scn::Play.add(
       end
   end,
   FelECS::Sys.new('DebugRenderHitbox') do
-    scissor_path = Levels[CurrentLevel.level][:scissor_path].call(FECS::Cmp::ScissorTime.first.time)
-    scissor_size = Levels[CurrentLevel.level][:scissor_size].call(FECS::Cmp::ScissorTime.first.time)
+    scissor_path = ScissorPath #Levels[CurrentLevel.level][:scissor_path].call(FECS::Cmp::ScissorTime.first.time)
+    scissor_size = ScissorSize #Levels[CurrentLevel.level][:scissor_size].call(FECS::Cmp::ScissorTime.first.time)
     if Input.show_debug
       Rl.scissor_mode(
         x: scissor_path[0],
@@ -768,14 +869,19 @@ FECS::Scn::Play.add(
         hitbox.rec.draw_lines(line_thick: 2, color: faded_blue)
       end
     end
-    Rl::Rectangle.new(scissor_path[0]-1, scissor_path[1]-1, scissor_size[0]+1, scissor_size[1]+1).draw_lines(line_thick: 3, color: RED)
+    if FECS::Cmp::Transition.first.state == 'none'
+      Rl::Rectangle.new(scissor_path[0]-1, scissor_path[1]-1, scissor_size[0]+1, scissor_size[1]+1).draw_lines(line_thick: 3, color: RED)
+    else
+      Rl::Rectangle.new(scissor_path[0]-1, scissor_path[1]-1, scissor_size[0]+1, scissor_size[1]+1).draw_lines(line_thick: 3, color: BLACK)
+    end
   end
 )
 
-CurrentLevel.level = 1
+CurrentLevel.level = 0
 
 FelECS::Order.sort(
   FECS::Sys::PlayerInput,
+  FECS::Sys::Transition,
   FECS::Sys::PlayerMovement,
   FECS::Sys::Damage,
   FECS::Sys::Walls,

@@ -270,6 +270,7 @@ FECS::Sys.new('ConstructLevel') do
   FECS::Cmp::Player.first.state = 'running'
   FECS::Cmp::Player.first.state_direction = 'right'
   PlayerTileset.texture = OrcTextures[3]
+  FECS::Cmp::Player.first.moved = false
 
   MapTexture.texture = Rl::Texture.new(level[:map_texture][:path])
   MapTexture.source_rec = level[:map_texture][:source_rec]
@@ -327,8 +328,6 @@ FECS::Sys.new('ConstructLevel') do
   player_pos.y = level[:player_spawn].y
   player_vel.x = 0
   player_vel.y = 0
-
-  Player.component[FECS::Cmp::Player].moved = false
 
   FECS::Cmp::ScissorTime.first.time = 0
 end
