@@ -209,6 +209,105 @@ Resetting = false
 ScissorPath = 10000
 ScissorSize = 1
 
+#FECS::Scn.new('Common')
+#FECS::Scn::Common.add(
+FECS::Sys.new('Music') do
+  #puts 'check web'
+  if Rl.platform == 'web'
+    #puts 'check mouse press'
+    if Rl.mouse_button_pressed? 0
+      #puts 'check if device redy'
+      unless Rl.audio_device_ready?
+        #puts 'load device'
+        Rl.init_audio_device
+        #puts 'set master'
+        Rl.set_master_volume(0.1)
+      end
+    end
+    #puts 'check if sound exists'
+    next unless Rl.audio_device_ready?
+    if !Music
+      #puts 'load it'
+      Music = Rl::Sound.new('./assets/music.ogg')
+      #puts 'set volume'
+      #Music.volume = 0.05
+      #puts 'check if its playing'
+    elsif !Music.playing?
+      #puts 'play it'
+      Music.play
+    end
+  end
+  #if Rl.key_pressed? 87
+  #end
+  #unless Music.playing?
+  #  Music.play
+  #end
+end
+FECS::Sys.new('Transition') do
+  cmp = FECS::Cmp::Transition.first
+  #cmp.state = 'into_init' if Rl.mouse_button_pressed? 0
+  next if cmp.state == 'none'
+  if cmp.state == 'into_init'
+    FECS::Cmp::Player.first.moved = false
+    cmp.state = 'into'
+    cmp.time = 0
+  end
+  if cmp.state == 'into'
+    cmp.time += Rl.frame_time
+    if cmp.time >= 1
+      cmp.state = 'outof_init'
+      cmp.time = 1
+    end
+    #ScissorPath = [(cmp.time**3),
+    #               (cmp.time**3)]
+    easeTime = (1 - cmp.time) ** 3
+
+    n1 = 7.5625
+    d1 = 2.75
+    time = (cmp.time)
+
+    if time < (1 / d1)
+      easeTime = n1 * time * time
+    elsif time < (2 / d1)
+      easeTime = n1 * (time -= (1.5 / d1)) * time + 0.75
+    elsif time < (2.5 / d1)
+      easeTime = n1 * (time -= (2.25 / d1)) * time + 0.9375
+    else
+      easeTime = n1 * (time -= (2.625 / d1)) * time + 0.984375
+    end
+    easeTime = 1 - easeTime
+
+    newsize = [easeTime * ScissorSize[0],
+               easeTime * ScissorSize[1]]
+    ScissorPath = [
+      ScissorPath[0] + ((ScissorSize[0] - newsize[0])/2),
+      ScissorPath[1] + ((ScissorSize[1] - newsize[1])/2)
+    ]
+    ScissorSize = newsize
+  elsif cmp.state == 'outof_init'
+    cmp.state = 'outof'
+    cmp.time = -0.5
+  end
+  if cmp.state == 'outof'
+    cmp.time += Rl.frame_time
+    if cmp.time >= 1
+      cmp.state = 'none'
+      cmp.time = 1
+    end
+    c1 = 1.70158
+    c3 = c1 + 1
+    easeTime = [1 + c3 * ((cmp.time - 1)**3) + c1 * ((cmp.time - 1)**2),0].max
+    newsize = [easeTime * ScissorSize[0],
+               easeTime * ScissorSize[1]]
+    ScissorPath = [
+      ScissorPath[0] + ((ScissorSize[0] - newsize[0])/2),
+      ScissorPath[1] + ((ScissorSize[1] - newsize[1])/2)
+    ]
+    ScissorSize = newsize
+  end
+end
+
+
 FECS::Scn.new('Menu')
 FECS::Scn::Menu.add(
   FECS::Sys.new('Button') do
@@ -216,32 +315,50 @@ FECS::Scn::Menu.add(
       ent = button.entity
       sprite = ent.component[FECS::Cmp::Sprite]
       hitbox = ent.component[FECS::Cmp::Hitbox]
+      trans = FECS::Cmp::Transition.first
       if button.clicked
         sprite.texture = button.pressed_texture
       else
         sprite.texture = button.unpressed_texture
       end
-      if hitbox.rec.collide_with_point? Rl.mouse_position
+      if hitbox.rec.collide_with_point?(Rl.mouse_position) && trans.state == 'none'
         if Rl.mouse_button_down? 0
           button.clicked = true
-        elsif Rl.mouse_button_up? 0 and button.clicked
+        elsif Rl.mouse_button_up?(0) && button.clicked
           button.clicked = false
-          FECS::Sys::DestroyTitleScreen.call
+          #FECS::Sys::DestroyTitleScreen.call
+          trans.state = 'into_init'
         end
       else
         button.clicked = false
       end
+      if trans.state == 'outof_init'
+        FECS::Sys::DestroyTitleScreen.call
+      end
     end
+  end,
+  FECS::Sys.new('ScissorMenu') do
+    ScissorPath = [325,212]
+    ScissorSize = [250,250]
   end,
   FECS::Sys.new('RenderMenu') do
-    FECS::Cmp::Sprite.each do |sprite_cmp|
-      Rl.draw_texture_pro(texture: sprite_cmp.texture,
-                          origin: Rl::Vector2.new(0,0),
-                          source_rec: sprite_cmp.source_rec,
-                          dest_rec: sprite_cmp.dest_rec)
-    end
+    scissor_path = ScissorPath
+    scissor_size = ScissorSize
+    Rl::Rectangle.new(scissor_path[0], scissor_path[1], scissor_size[0], scissor_size[1]).draw(color: Rl::Color.new(52,52,64,255))
+    Rl.scissor_mode(
+      x: scissor_path[0],
+      y: scissor_path[1],
+      width: scissor_size[0],
+      height: scissor_size[1]) do
+        FECS::Cmp::Sprite.each do |sprite_cmp|
+          Rl.draw_texture_pro(texture: sprite_cmp.texture,
+                              origin: Rl::Vector2.new(0,0),
+                              source_rec: sprite_cmp.source_rec,
+                              dest_rec: sprite_cmp.dest_rec)
+        end
+      end
   end,
-  FECS::Sys.new('ApplyPositionToSprite') do
+  FECS::Sys.new('ApplyPositionToSpriteMenu') do
     FECS::Cmp::Position.each do |position_cmp|
       ent = position_cmp.entity
       next if ent.components[FECS::Cmp::Sprite].nil?
@@ -257,38 +374,6 @@ FECS::Scn::Menu.add(
 
 FECS::Scn.new('Play')
 FECS::Scn::Play.add(
-  FECS::Sys.new('Music') do
-    puts 'check web'
-    if Rl.platform == 'web'
-      puts 'check mouse press'
-      if Rl.mouse_button_pressed? 0
-        puts 'check if device redy'
-        unless Rl.audio_device_ready?
-          puts 'load device'
-          Rl.init_audio_device
-          puts 'set master'
-          Rl.set_master_volume(0.1)
-        end
-      end
-      puts 'check if sound exists'
-      next unless Rl.audio_device_ready?
-      if !Music
-        puts 'load it'
-        Music = Rl::Sound.new('./assets/music.ogg')
-        puts 'set volume'
-        #Music.volume = 0.05
-        puts 'check if its playing'
-      elsif !Music.playing?
-        puts 'play it'
-        Music.play
-      end
-    end
-    #if Rl.key_pressed? 87
-    #end
-    #unless Music.playing?
-    #  Music.play
-    #end
-  end,
   FECS::Sys.new('PlayerInput') do
     Input.move_up = Rl.key_down? 87 # W
     Input.move_left = Rl.key_down? 65 # A
@@ -768,69 +853,6 @@ FECS::Scn::Play.add(
       end
     end
   end,
-  FECS::Sys.new('Transition') do
-    cmp = FECS::Cmp::Transition.first
-    #cmp.state = 'into_init' if Rl.mouse_button_pressed? 0
-    next if cmp.state == 'none'
-    if cmp.state == 'into_init'
-      FECS::Cmp::Player.first.moved = false
-      cmp.state = 'into'
-      cmp.time = 0
-    end
-    if cmp.state == 'into'
-      cmp.time += Rl.frame_time
-      if cmp.time >= 1
-        cmp.state = 'outof_init'
-        cmp.time = 1
-      end
-      #ScissorPath = [(cmp.time**3),
-      #               (cmp.time**3)]
-      easeTime = (1 - cmp.time) ** 3
-
-      n1 = 7.5625
-      d1 = 2.75
-      time = (cmp.time)
-
-      if time < (1 / d1)
-        easeTime = n1 * time * time
-      elsif time < (2 / d1)
-        easeTime = n1 * (time -= (1.5 / d1)) * time + 0.75
-      elsif time < (2.5 / d1)
-        easeTime = n1 * (time -= (2.25 / d1)) * time + 0.9375
-      else
-        easeTime = n1 * (time -= (2.625 / d1)) * time + 0.984375
-      end
-      easeTime = 1 - easeTime
-
-      newsize = [easeTime * ScissorSize[0],
-                 easeTime * ScissorSize[1]]
-      ScissorPath = [
-        ScissorPath[0] + ((ScissorSize[0] - newsize[0])/2),
-        ScissorPath[1] + ((ScissorSize[1] - newsize[1])/2)
-      ]
-      ScissorSize = newsize
-    elsif cmp.state == 'outof_init'
-      cmp.state = 'outof'
-      cmp.time = -0.5
-    end
-    if cmp.state == 'outof'
-      cmp.time += Rl.frame_time
-      if cmp.time >= 1
-        cmp.state = 'none'
-        cmp.time = 1
-      end
-      c1 = 1.70158
-      c3 = c1 + 1
-      easeTime = [1 + c3 * ((cmp.time - 1)**3) + c1 * ((cmp.time - 1)**2),0].max
-      newsize = [easeTime * ScissorSize[0],
-                 easeTime * ScissorSize[1]]
-      ScissorPath = [
-        ScissorPath[0] + ((ScissorSize[0] - newsize[0])/2),
-        ScissorPath[1] + ((ScissorSize[1] - newsize[1])/2)
-      ]
-      ScissorSize = newsize
-    end
-  end,
   FECS::Sys.new('Render') do
     scissor_path = ScissorPath #Levels[CurrentLevel.level][:scissor_path].call(FECS::Cmp::ScissorTime.first.time)
     scissor_size = ScissorSize #Levels[CurrentLevel.level][:scissor_size].call(FECS::Cmp::ScissorTime.first.time)
@@ -924,11 +946,26 @@ FECS::Scn::Play.add(
 
 #CurrentLevel.level = 0
 FECS::Sys::ConstructTitleScreen.call
-FECS::Stg.add(FECS::Scn::Menu)
+FECS::Scn::Menu.add(
+  FECS::Sys::Transition,
+  FECS::Sys::Music,
+)
+FECS::Scn::Play.add(
+  FECS::Sys::Transition,
+  FECS::Sys::Music,
+)
+FECS::Stg.add(
+  FECS::Scn::Menu,
+)
 
 FelECS::Order.sort(
   FECS::Sys::PlayerInput,
+  FECS::Sys::PlayerReset,
+  FECS::Sys::Button,
+  FECS::Sys::ScissorMenu,
+  FECS::Sys::Scissor,
   FECS::Sys::Transition,
+  FECS::Sys::RenderMenu,
   FECS::Sys::PlayerMovement,
   FECS::Sys::Damage,
   FECS::Sys::Walls,
