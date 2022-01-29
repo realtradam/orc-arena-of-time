@@ -576,8 +576,8 @@ lastlevel = {
 
 Levels.push(level0)
 Levels.push(level1)
-Levels.push(mazelevel)
 Levels.push(splitlevel)
+Levels.push(mazelevel)
 Levels.push(lastlevel)
 
 FECS::Sys.new('ConstructLevel') do
