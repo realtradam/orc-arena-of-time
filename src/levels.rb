@@ -298,7 +298,7 @@ mazelevel= {
   scissor_size: Path.new(
     lambda do |time|
       [200,
-       607]
+       580]
     end,
   ),
   scissor_path: Path.new(
