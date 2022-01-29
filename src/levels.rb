@@ -383,6 +383,116 @@ mazelevel= {
   ]
 }
 
+splitlevel = {
+  map_texture: {
+    path: './assets/split.png',
+    source_rec: Rl::Rectangle.new(0,0,450,337),
+    dest_rec: Rl::Rectangle.new(-16,0,450*2,337*2)
+  },
+  overhang_texture: {
+    path: './assets/split-overhang.png',
+    source_rec: Rl::Rectangle.new(0,0,450,337),
+    dest_rec: Rl::Rectangle.new(-16,0,450*2,337*2)
+  },
+  player_spawn: Rl::Vector2.new(434,140),
+  scissor_size: Path.new(
+    lambda do |time|
+      [150+(728*(-(Math.cos(Math::PI*time)-1)/2)),
+       150]
+    end,
+    lambda do |time|
+      [878,
+       150-(10*(-(Math.cos(Math::PI*time)-1)/2))]
+    end,
+    lambda do |time|
+      [878-(693*(-(Math.cos(Math::PI*time)-1)/2)),
+       140]
+    end,
+    lambda do |time|
+      [185,
+       140+(45*(-(Math.cos(Math::PI*time)-1)/2))]
+    end,
+  ),
+  scissor_path: Path.new(
+    lambda do |time|
+      #[Math.interpolate(389,25,time),
+      [373-(364*(-(Math.cos(Math::PI*time)-1)/2)),
+       85]
+    end,
+    lambda do |time|
+      [9,
+       85+(417*(-(Math.cos(Math::PI*time)-1)/2))]
+       #Math.interpolate(85,502,time)]
+    end,
+    lambda do |time|
+      [9+(474*(-(Math.cos(Math::PI*time)-1)/2)),
+       502]
+      #[Math.interpolate(25,499,time),
+      # Math.interpolate(502,274,time)]
+    end,
+    lambda do |time|
+      [483,
+       502-(228*(-(Math.cos(Math::PI*time)-1)/2))]
+      #[Math.interpolate(25,499,time),
+      # Math.interpolate(502,274,time)]
+    end,
+  ),
+  scissor_speed: [1.0/2.0, 1.0/6.0, 1.0/6.0, 1.0/4.0],
+  timed_render: [
+    {
+      path: './assets/text1.png',
+      time_start: 0,
+      time_end: 1.45,
+      source_rec: Rl::Rectangle.new(284,255,442,66),
+      dest_rec: Rl::Rectangle.new(284,255,442,66),
+    },
+    {
+      path: './assets/text2.png',
+      time_start: 1.45,
+      time_end: -1,
+      source_rec: Rl::Rectangle.new(284,255,442,66),
+      dest_rec: Rl::Rectangle.new(284,255,442,66),
+    },
+  ],
+  end_goal: [560,352,32,32],
+  walls: [
+    [26,598,844,24],
+    [26,374,130,152],
+    [156,374,128,56],
+    [-12,76,40,546],
+    [28,76,840,34],
+    [164,110,24,32],
+    [258,180,28,32],
+    [98,212,604,88],
+    [508,404,46,34],
+    [598,404,46,34],
+    [642,300,60,138],
+    [610,438,92,86],
+    [354,438,188,86],
+    [226,468,128,56],
+    [354,300,156,138],
+    [868,76,39,546],
+    [762,314,44,28],
+    [822,500,46,34],
+    [698,500,48,34],
+  ],
+  damage_areas: [
+    #[10, 0,0, 100,100],
+  ],
+  damage_walls: [
+    [1,756,380,56,64],
+    [1,724,220,24,32],
+    [1,820,220,24,32],
+    [1,244,556,24,32],
+    [1,372,556,24,32],
+    [1,500,556,24,32],
+    [1,692,556,24,32],
+    [1,628,524,24,32],
+    [1,436,524,24,32],
+    [1,308,524,24,32],
+  ]
+}
+
 lastlevel = {
   map_texture: {
     path: './assets/Ending/ending.png',
@@ -467,6 +577,7 @@ lastlevel = {
 Levels.push(level0)
 Levels.push(level1)
 Levels.push(mazelevel)
+Levels.push(splitlevel)
 Levels.push(lastlevel)
 
 FECS::Sys.new('ConstructLevel') do
