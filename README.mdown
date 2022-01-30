@@ -1,3 +1,39 @@
-# Yup this is a game
+# Orc: Arena of Time
 
-Come back soon, im going to add more info about how the game was made, and what I used to compile it for web with raylib(if you are curious and I didnt update this readme in more then a week, just send me a message or open an issue)
+[Itch Link](https://tradam.itch.io/orc-arena-of-time)
+
+Welcome to the repo of our Raylib 5k gamejam game. This game was built using a few key tools:
+
+1. [Raylib](https://github.com/raysan5/raylib)(obviously)
+2. [mRuby Bindings](https://github.com/realtradam/mruby-raylib)
+3. A custom ECS library implemented in Ruby by me([FelECS](https://github.com/realtradam/FelECS))
+4. [A customized mRuby build pipeline](https://github.com/realtradam/FelFlameEngine)
+
+Raylibe and FelECS are fairly stable, however the bindings and the build pipeline will be undergoing an overhaul soon.
+
+Note: how to use the build pipeline is currently undocumented and only has been used on Arch Linux. To use it you will need Zig to build for desktop, and EMCC to build for web. You will also need any libraries that Raylib depends one. You will need Ruby installed to run the build commands. There may be more libraries needed(such as some kind of development libraries).
+
+## How the process looks:
+**1. Build mRuby**
+
+This step you generally only need to do once when developing games, but when developing bindings you will do this often. See mRuby documentation to see how to customize your build of mRuby. Run `rake build:mruby` to build it, or `rake clean:mruby` to clean the build incase you are having issues.
+
+This will build the mRuby libs(libmruby.a) which includes raylib and will be used to compile your game. It will also build an interpreter executable which will allow you to pass in Ruby files and run them immediately.
+
+**2. Coding the game**
+
+In the build pipeline directory, there is a game directory where you place your ruby code. `main.rb` is the entry point for the resulting executable. To build this game you would clone this repository into this game directory.
+
+**3. Testing and Building the game.**
+
+To test your game, simply run `rake playtest` or `rake p`. This will bundle your Ruby code into a single Ruby file and then pass it into the interpreter. This allows for fast iterating and building of the game as it instantly starts without any compilation needed.
+
+To build the game for release or testing, use the commands `rake build:web` to build for web and `rake build:tux` to build for linux desktop. The resulting files are in `build/web` and `build/tux` respectively.
+
+Once you have created a web build you can quickly test it out using `rake serve` or `rake s`
+
+## Bindings and Libraries
+In the code of this game, anything prefixed with `Rl::` is a binding to raylib, while anything prefixed with `FECS::` is the custom ECS library I implemented.
+
+## Questions and stuff
+If you have more questions feel free to open an issue or leave a comment on itch, I would be glad to answer.
