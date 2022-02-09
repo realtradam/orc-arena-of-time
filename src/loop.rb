@@ -8,7 +8,13 @@
 
 Rl.while_window_open do
 
-  Rl.draw(clear_color: BLACK) do
+  #Rl.draw(clear_color: BLACK) do
+  Rl.draw do
+    Rl::clear_background(color: Rl::Color.black)
+    #puts Rl::Color.golden_rod.r
+    #puts Rl::Color.golden_rod.g
+    #puts Rl::Color.golden_rod.b
+    #puts Rl::Color.golden_rod.a
     #Rl.draw_texture_pro(texture: Lautrec, origin: Origin, source: Lautrec_Source, dest: Position)
     #draw_texture_pro(texture:, source:, dest:, origin: Rl::Vector.new(0,0), rotation: 0, tint: Rl::Color.new(255,255,255,255))
     FECS::Stage.call

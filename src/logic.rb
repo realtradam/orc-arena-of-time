@@ -91,7 +91,7 @@ PlayerBkgWhite = Rl::Color.new(255,200,200,150)
 
 #FECS::Cmp::ScissorBox.new(rec: Rl::Rectangle.new(200,200,250,250))
 
-ResetPrompt = Rl::Texture.new('./assets/resetprompt.png')
+ResetPrompt = Rl::Texture.new(path: './assets/resetprompt.png')
 FECS::Cmp::ScissorTime.new(time: 0)
 EndGoal = FECS::Cmp::EndGoal.new
 Input = FECS::Cmp::Input.new
@@ -366,10 +366,8 @@ FECS::Scn::Menu.add(
       width: scissor_size[0],
       height: scissor_size[1]) do
         FECS::Cmp::Sprite.each do |sprite_cmp|
-          Rl.draw_texture_pro(texture: sprite_cmp.texture,
-                              origin: Rl::Vector2.new(0,0),
-                              source_rec: sprite_cmp.source_rec,
-                              dest_rec: sprite_cmp.dest_rec)
+          sprite_cmp.texture.draw(source: sprite_cmp.source_rec,
+                                  dest: sprite_cmp.dest_rec)
         end
       end
   end,
@@ -871,10 +869,8 @@ FECS::Scn::Play.add(
           result = FECS::Cmp::TimedRender.find do |n|
             n.path.equal? timed_render[:path]
           end
-          Rl.draw_texture_pro(texture: result.texture,
-                              origin: Rl::Vector2.new(0,0),
-                              source_rec: result.source_rec,
-                              dest_rec: result.dest_rec,
+          result.texture.draw(source: result.source_rec,
+                              dest: result.dest_rec,
                               tint: BkgWhite)
         end
       end
@@ -889,12 +885,13 @@ FECS::Scn::Play.add(
     x_vel = player.component[FECS::Cmp::Velocity].x.abs
     vel = Math.sqrt(x_vel**2 + y_vel**2)
     FECS::Cmp::Tileset.each do |sprite_cmp|
-      Rl.draw_texture_pro(texture: sprite_cmp.tileset.texture,
-                          origin: sprite_cmp.origin,
-                          source_rec: sprite_cmp.tileset.rec,
-                          dest_rec: sprite_cmp.dest_rec,
-                          tint: PlayerBkgWhite,
-                          rotation: sprite_cmp.rotation)
+      sprite_cmp.tileset.texture.draw(
+        origin: sprite_cmp.origin,
+        source: sprite_cmp.tileset.rec,
+        dest: sprite_cmp.dest_rec,
+        tint: PlayerBkgWhite,
+        rotation: sprite_cmp.rotation
+      )
     end
     Rl.scissor_mode(
       x: scissor_path[0],
@@ -902,25 +899,20 @@ FECS::Scn::Play.add(
       width: scissor_size[0],
       height: scissor_size[1]) do
         FECS::Cmp::Sprite.each do |sprite_cmp|
-          Rl.draw_texture_pro(texture: sprite_cmp.texture,
-                              origin: Rl::Vector2.new(0,0),
-                              source_rec: sprite_cmp.source_rec,
-                              dest_rec: sprite_cmp.dest_rec)
+          sprite_cmp.texture.draw(source: sprite_cmp.source_rec,
+                              dest: sprite_cmp.dest_rec)
         end
         FECS::Cmp::Tileset.each do |sprite_cmp|
-          Rl.draw_texture_pro(texture: sprite_cmp.tileset.texture,
-                              origin: sprite_cmp.origin,
-                              source_rec: sprite_cmp.tileset.rec,
-                              dest_rec: sprite_cmp.dest_rec,
-                              tint: sprite_cmp.tint,
-                              rotation: sprite_cmp.rotation)
+          sprite_cmp.tileset.texture.draw(origin: sprite_cmp.origin,
+                                          source: sprite_cmp.tileset.rec,
+                                          dest: sprite_cmp.dest_rec,
+                                          tint: sprite_cmp.tint,
+                                          rotation: sprite_cmp.rotation)
         end
         FECS::Cmp::OverhangTexture.each do |sprite_cmp|
-          Rl.draw_texture_pro(texture: sprite_cmp.texture,
-                              origin: Rl::Vector2.new(0,0),
-                              source_rec: sprite_cmp.source_rec,
-                              dest_rec: sprite_cmp.dest_rec)
-
+          sprite_cmp.texture.draw(origin: Rl::Vector2.new(0,0),
+                                  source: sprite_cmp.source_rec,
+                                  dest: sprite_cmp.dest_rec)
         end
         if Input.show_debug
           Rl.draw_text(text: "speed: #{"%.1f" % vel}", x: 10, y: 10, font_size: 30, color: BLACK)
@@ -932,12 +924,11 @@ FECS::Scn::Play.add(
       end
       if Input.show_debug
         FECS::Cmp::Tileset.each do |sprite_cmp|
-          Rl.draw_texture_pro(texture: sprite_cmp.tileset.texture,
-                              origin: sprite_cmp.origin,
-                              source_rec: sprite_cmp.tileset.rec,
-                              dest_rec: sprite_cmp.dest_rec,
-                              tint: sprite_cmp.tint,
-                              rotation: sprite_cmp.rotation)
+          sprite_cmp.tileset.texture.draw(origin: sprite_cmp.origin,
+                                          source: sprite_cmp.tileset.rec,
+                                          dest: sprite_cmp.dest_rec,
+                                          tint: sprite_cmp.tint,
+                                          rotation: sprite_cmp.rotation)
         end
       end
   end,
@@ -988,17 +979,12 @@ FECS::Sys.new('RenderResetText') do
   trans = FECS::Cmp::Transition.first
   if Player.component[FECS::Cmp::Hp].value <= 0
     if trans.state == 'into'
-      Rl.draw_texture_pro(texture: ResetPrompt,
-                          origin: Rl::Vector2.new(0,0),
-                          source_rec: Rl::Rectangle.new(0,0,900,650),
-                          dest_rec: Rl::Rectangle.new(0,0,900,650),
-                          tint: Rl::Color.new(255,255,255,Math.interpolate(255,0,trans.time)))
+      ResetPrompt.draw(source: Rl::Rectangle.new(0,0,900,650),
+                       dest: Rl::Rectangle.new(0,0,900,650),
+                       tint: Rl::Color.new(255,255,255,Math.interpolate(255,0,trans.time)))
     elsif trans.state == 'none'
-      Rl.draw_texture_pro(texture: ResetPrompt,
-                          origin: Rl::Vector2.new(0,0),
-                          source_rec: Rl::Rectangle.new(0,0,900,650),
-                          dest_rec: Rl::Rectangle.new(0,0,900,650),
-                          tint: WHITE)
+      ResetPrompt.draw(source: Rl::Rectangle.new(0,0,900,650),
+                       dest: Rl::Rectangle.new(0,0,900,650))
 
     end
   end
