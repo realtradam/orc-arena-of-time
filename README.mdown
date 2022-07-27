@@ -2,6 +2,8 @@
 
 [Itch Link](https://tradam.itch.io/orc-arena-of-time)
 
+![Preview](https://github.com/realtradam/orc-arena-of-time/blob/master/Readme/preview.gif?raw=true)
+
 Welcome to the repo of our Raylib 5k gamejam game. This game was built using a few key tools:
 
 1. [Raylib](https://github.com/raysan5/raylib)(obviously)
