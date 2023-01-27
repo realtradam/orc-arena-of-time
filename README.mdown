@@ -1,5 +1,4 @@
 # Orc: Arena of Time
-
 [Itch Link](https://tradam.itch.io/orc-arena-of-time)
 
 ![Preview](https://github.com/realtradam/orc-arena-of-time/blob/master/Readme/preview.gif?raw=true)
@@ -11,9 +10,9 @@ Welcome to the repo of our Raylib 5k gamejam game. This game was built using a f
 3. A custom ECS library implemented in Ruby by me([FelECS](https://github.com/realtradam/FelECS))
 4. [A customized mRuby build pipeline](https://github.com/realtradam/FelFlameEngine)
 
-Raylibe and FelECS are fairly stable, however the bindings and the build pipeline will be undergoing an overhaul soon.
+Raylib and FelECS are fairly stable, however the bindings and the build pipeline will be undergoing an overhaul soon.
 
-Note: how to use the build pipeline is currently undocumented and only has been used on Arch Linux. To use it you will need Zig to build for desktop, and EMCC to build for web. You will also need any libraries that Raylib depends one. You will need Ruby installed to run the build commands. There may be more libraries needed(such as some kind of development libraries).
+Note: how to use the build pipeline is currently undocumented and only has been used on Arch Linux. To use it you will need Zig to build for desktop, and EMCC to build for web. You will also need any libraries that Raylib depends on. You will need Ruby installed to run the build commands. There may be more libraries needed(such as some kind of development libraries).
 
 ## How the process looks:
 **1. Build mRuby**
@@ -38,4 +37,4 @@ Once you have created a web build you can quickly test it out using `rake serve`
 In the code of this game, anything prefixed with `Rl::` is a binding to raylib, while anything prefixed with `FECS::` is the custom ECS library I implemented.
 
 ## Questions and stuff
-If you have more questions feel free to open an issue or leave a comment on itch, I would be glad to answer.
+If you have more questions feel free to open an issue or leave a comment on itch, I would be glad to answer!
