@@ -5,7 +5,7 @@
 
 Welcome to the repo of our Raylib 5k gamejam game. This game was built using a few key tools:
 
-1. [Raylib](https://github.com/raysan5/raylib)(obviously)
+1. [Raylib](https://github.com/raysan5/raylib)
 2. [mRuby Bindings](https://github.com/realtradam/mruby-raylib)
 3. A custom ECS library implemented in Ruby by me([FelECS](https://github.com/realtradam/FelECS))
 4. [A customized mRuby build pipeline](https://github.com/realtradam/FelFlameEngine)
